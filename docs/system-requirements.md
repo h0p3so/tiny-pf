@@ -61,7 +61,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The user must belong to one of the allowed categories: student, graduate, professor, administrative staff member or family member.* |
 | **Actor** | *Participant* |
 | **Main flow** | 1. The actor accesses the registration page. <br>2. The actor enters the required personal information. <br>3. The actor submits the registration form. <br>4. The system validates the information. <br>5. The system creates the user account successfully. |
-| **Use case diagram** | <img width="488" height="199" alt="image" src="https://github.com/user-attachments/assets/9a4622bd-0a6d-4d04-ac6a-2bd0aeba049e" /> |
+| **Use case diagram** | <img width="488" height="199" alt="image" src="/assets/images/sysreq/1.png"/> |
 | **Postconditions** | *The user account is created and the participant access the system.* |
 
 ## FR-02 - User authentication
@@ -74,7 +74,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The user must already be registered in the system and have valid login credentials.* |
 | **Actor** | *Participant, Captain, Organizer, Referee, Administrator* |
 | **Main flow** | 1. The actor accesses the login page. <br>2. The actor enters their credentials. <br>3. The system validates the credentials. <br>4. The system grants access according to the user's role. |
-| **Use case diagram** | <img width="608" height="669" alt="image" src="https://github.com/user-attachments/assets/2b5d6487-ecb0-424d-9890-6112dd3ef0c8" /> |
+| **Use case diagram** | <img width="608" height="669" alt="image" src="/assets/images/sysreq/2.png"/> |
 | **Postconditions** | *The authenticated user gains access to the platform and can interact with the system according to their permissions.* |
 
 ## FR-03 - Sports profile management
@@ -87,7 +87,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The participant must be authenticated in the system.* |
 | **Actor** | *Participant* |
 | **Main flow** | 1. The participant accesses the profile management section. <br>2. The participant enters or updates sports profile information. <br>3. The participant saves the changes. <br>4. The system validates and stores the information. |
-| **Use case diagram** | <img width="608" height="288" alt="image" src="https://github.com/user-attachments/assets/f1c78c25-7991-497e-98fb-564bf15084fa" /> |
+| **Use case diagram** | <img width="608" height="288" alt="image" src="/assets/images/sysreq/3.png" /> |
 | **Postconditions** | *The participant’s sports profile information is stored and available for team captains to consult.* |
 
 ## FR-04 - Player availability management
@@ -100,7 +100,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The participant must be authenticated and have a completed sports profile.* |
 | **Actor** | *Participant* |
 | **Main flow** | 1. The participant accesses the availability settings. <br>2. The participant marks themselves as available for recruitment. <br>3. The system updates the availability status. |
-| **Use case diagram** | <img width="628" height="172" alt="image" src="https://github.com/user-attachments/assets/29790f92-de9e-4378-a4e5-31d3a141cb53" /> |
+| **Use case diagram** | <img width="628" height="172" alt="image" src="/assets/images/sysreq/4.png" /> |
 | **Postconditions** | *The participant appears as available for team recruitment searches performed by captains.* |
 
 ## FR-05 - Team creation
@@ -113,7 +113,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The participant must be authenticated and must not belong to another team.* |
 | **Actor** | *Captain* |
 | **Main flow** | 1. The captain accesses the team creation interface. <br>2. The captain enters the required team information. <br>3. The captain confirms the creation of the team. <br>4. The system validates the information and creates the team. |
-| **Use case diagram** | <img width="566" height="186" alt="image" src="https://github.com/user-attachments/assets/e26f3eb9-ce6e-45c0-ae8c-5bdd735e70b5" /> |
+| **Use case diagram** | <img width="566" height="186" alt="image" src="/assets/images/sysreq/5.png" /> |
 | **Postconditions** | *A new team is created in the system and the captain becomes the team manager.* |
 
 ## FR-06 - Team configuration
@@ -126,7 +126,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The captain must have an existing team and be authenticated in the system.* |
 | **Actor** | *Captain* |
 | **Main flow** | 1. The captain accesses the team configuration page. <br>2. The captain enters or updates team information. <br>3. The captain saves the changes. <br>4. The system validates and stores the updated information. |
-| **Use case diagram** | <img width="516" height="159" alt="image" src="https://github.com/user-attachments/assets/b636aa79-43b8-4bb4-a4c9-a4ef6b3f72fa" /> |
+| **Use case diagram** | <img width="516" height="159" alt="image" src="/assets/images/sysreq/6.png" /> |
 | **Postconditions** | *The team information is updated and available to other participants in the platform.* |
 
 ## FR-07 - Player search
@@ -139,7 +139,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The captain must be authenticated and have a team created.* |
 | **Actor** | *Captain* |
 | **Main flow** | 1. The captain accesses the player search interface. <br>2. The captain selects the desired search filters. <br>3. The system processes the query. <br>4. The system displays a list of matching participants. |
-| **Use case diagram** | <img width="525" height="144" alt="image" src="https://github.com/user-attachments/assets/e246076b-8152-4b4c-9de3-f900cd379f99" /> |
+| **Use case diagram** | <img width="525" height="144" alt="image" src="/assets/images/sysreq/7.png" /> |
 | **Postconditions** | *The captain can view a list of participants matching the search criteria.* |
 
 ## FR-08 - Team invitation management
@@ -152,7 +152,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The captain must have a team created and the participant must be available for recruitment.* |
 | **Actor** | *Captain, Participant* |
 | **Main flow** | 1. The captain selects a participant from the search results. <br>2. The captain sends an invitation to join the team. <br>3. The participant receives the invitation. <br>4. The participant accepts or rejects the invitation. <br>5. The system updates the team roster accordingly. |
-| **Use case diagram** | <img width="512" height="175" alt="image" src="https://github.com/user-attachments/assets/1ba64a2c-3b09-4541-9a23-75059c826d30" /> |
+| **Use case diagram** | <img width="512" height="175" alt="image" src="/assets/images/sysreq/8.png" /> |
 | **Postconditions** | *If accepted, the participant becomes a member of the team.* |
 
 ## FR-09 - Team membership validation
@@ -165,8 +165,8 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *A participant attempts to join a team through an accepted invitation.* |
 | **Actor** | *System* |
 | **Main flow** | 1. The participant accepts a team invitation. <br>2. The system verifies whether the participant already belongs to another team. <br>3. The system validates that the team roster size is within the allowed limits. <br>4. The system confirms or rejects the membership accordingly. |
-| **Use case diagram** | <img width="598" height="219" alt="image" src="https://github.com/user-attachments/assets/19d768c6-4084-49f9-9b9a-a622adbbfa97" /> |
-| **Postconditions** | *The participant is successfully added to the team or the system prevents the action if the validation rules are not satisfied.* |
+| **Use case diagram** | <img width="598" height="219" alt="image" src="/assets/images/sysreq/9.png" /> |
+| **Postconditions** | *The participant is successfully added to the teajam or the system prevents the action if the validation rules are not satisfied.* |
 
 ## FR-10 - Payment receipt upload
 
@@ -178,7 +178,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The captain must have a team registered in the tournament.* |
 | **Actor** | *Captain* |
 | **Main flow** | 1. The captain accesses the payment submission interface. <br>2. The captain uploads the payment receipt. <br>3. The system validates the file format. <br>4. The system stores the receipt and marks the payment as pending review. |
-| **Use case diagram** | <img width="490" height="194" alt="image" src="https://github.com/user-attachments/assets/7b0c3610-f54f-4ca3-a0d9-43510143964c" /> |
+| **Use case diagram** | <img width="490" height="194" alt="image" src="/assets/images/sysreq/10.png" /> |
 | **Postconditions** | *The payment receipt is stored and awaits review by the tournament organizer.* |
 
 ## FR-11 - Payment validation
@@ -191,7 +191,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *A payment receipt must have been uploaded by a team captain and be pending review.* |
 | **Actor** | *Organizer* |
 | **Main flow** | 1. The organizer accesses the payment review section. <br>2. The system displays the list of pending payment receipts. <br>3. The organizer selects a receipt. <br>4. The organizer reviews the payment information. <br>5. The organizer approves or rejects the payment. <br>6. The system updates the payment status. |
-| **Use case diagram** | <img width="650" height="429" alt="image" src="https://github.com/user-attachments/assets/55220b35-cc19-4c09-a551-829d7a189d17" /> |
+| **Use case diagram** | <img width="650" height="429" alt="image" src="/assets/images/sysreq/11.png" /> |
 | **Postconditions** | *The payment status is updated and the corresponding team is notified of the decision.* |
 
 ## FR-12 - Tournament creation
@@ -204,7 +204,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The organizer must be authenticated in the system.* |
 | **Actor** | *Organizer* |
 | **Main flow** | 1. The organizer accesses the tournament management section. <br>2. The organizer selects the option to create a new tournament. <br>3. The organizer enters the required tournament information. <br>4. The organizer confirms the creation. <br>5. The system validates and stores the tournament information. |
-| **Use case diagram** | <img width="584" height="177" alt="image" src="https://github.com/user-attachments/assets/5df1f70b-4153-4e9c-910b-12e3092757e4" /> |
+| **Use case diagram** | <img width="584" height="177" alt="image" src="/assets/images/sysreq/12.png" /> |
 | **Postconditions** | *A new tournament is created and becomes available in the system.* |
 
 ## FR-13 - Tournament configuration
@@ -217,7 +217,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *A tournament must already exist and the organizer must be authenticated.* |
 | **Actor** | *Organizer* |
 | **Main flow** | 1. The organizer accesses the tournament configuration section. <br>2. The organizer selects a tournament. <br>3. The organizer defines the rules and tournament parameters. <br>4. The organizer saves the configuration. <br>5. The system validates and stores the configuration. |
-| **Use case diagram** | <img width="496" height="184" alt="image" src="https://github.com/user-attachments/assets/0e788bd9-4b81-4b6c-98e7-f8f47a07c55b" /> |
+| **Use case diagram** | <img width="496" height="184" alt="image" src="/assets/images/sysreq/13.png" /> |
 | **Postconditions** | *The tournament configuration is updated and applied to the competition.* |
 
 ## FR-14 - Team lineup management
@@ -230,7 +230,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The captain must have a registered team participating in the tournament.* |
 | **Actor** | *Captain* |
 | **Main flow** | 1. The captain accesses the lineup management section. <br>2. The captain selects the match. <br>3. The captain assigns players to starting and substitute positions. <br>4. The captain confirms the lineup. <br>5. The system stores the lineup information. |
-| **Use case diagram** | <img width="627" height="153" alt="image" src="https://github.com/user-attachments/assets/7a73e10f-faef-412f-a13c-0aa93aaa6b7e" /> |
+| **Use case diagram** | <img width="627" height="153" alt="image" src="/assets/images/sysreq/14.png" /> |
 | **Postconditions** | *The lineup for the selected match is registered and available for consultation.* |
 
 ## FR-15 - Opponent lineup consultation
@@ -243,7 +243,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The lineup must have been previously registered by the opposing team.* |
 | **Actor** | *Participant, Captain* |
 | **Main flow** | 1. The actor accesses the match information section. <br>2. The actor selects the match. <br>3. The system displays the lineup of both teams. |
-| **Use case diagram** | <img width="679" height="413" alt="image" src="https://github.com/user-attachments/assets/5699dd01-c2df-4803-a4bf-642ac0a68e81" /> |
+| **Use case diagram** | <img width="679" height="413" alt="image" src="/assets/images/sysreq/15.png" /> |
 | **Postconditions** | *The actor can view the opposing team's lineup.* |
 
 ## FR-16 - Match result registration
@@ -256,7 +256,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The match must have been previously scheduled in the system.* |
 | **Actor** | *Organizer* |
 | **Main flow** | 1. The organizer accesses the match management section. <br>2. The organizer selects the completed match. <br>3. The organizer enters the match result and relevant statistics. <br>4. The organizer confirms the information. <br>5. The system stores the match results. |
-| **Use case diagram** | <img width="513" height="186" alt="image" src="https://github.com/user-attachments/assets/2cd165da-0223-41f8-b630-cd2446062c86" /> |
+| **Use case diagram** | <img width="513" height="186" alt="image" src="/assets/images/sysreq/16.png" /> |
 | **Postconditions** | *The match results and statistics are recorded in the system.* |
 
 ## FR-17 - Match consultation for referees
@@ -269,7 +269,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The referee must be authenticated in the system and matches must be scheduled.* |
 | **Actor** | *Referee* |
 | **Main flow** | 1. The referee accesses the match consultation section. <br>2. The referee selects the relevant match. <br>3. The system displays the match information. |
-| **Use case diagram** | <img width="663" height="213" alt="image" src="https://github.com/user-attachments/assets/7afb9781-02e7-4579-ae47-3671cfddf679" />|
+| **Use case diagram** | <img width="663" height="213" alt="image" src="/assets/images/sysreq/17.png" />|
 | **Postconditions** | *The referee can view the details of the match to be officiated.* |
 
 ## FR-18 - Standings calculation
@@ -282,7 +282,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *Match results must have been registered in the system.* |
 | **Actor** | *System* |
 | **Main flow** | 1. Match results are registered in the system. <br>2. The system calculates statistics such as matches played, wins, draws, losses, goals for, goals against, and points. <br>3. The system updates the tournament standings table. |
-| **Use case diagram** | <img width="602" height="147" alt="image" src="https://github.com/user-attachments/assets/a6fee374-a983-48a1-a86e-d752231e41df" /> |
+| **Use case diagram** | <img width="602" height="147" alt="image" src="/assets/images/sysreq/18.png" /> |
 | **Postconditions** | *The standings table is updated and available for consultation.* |
 
 ## FR-19 - Knockout bracket generation
@@ -295,7 +295,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *The group stage of the tournament must be completed and standings must be available.* |
 | **Actor** | *System* |
 | **Main flow** | 1. The system identifies the qualified teams. <br>2. The system generates the knockout bracket structure. <br>3. The system schedules the corresponding matches. |
-| **Use case diagram** | <img width="648" height="167" alt="image" src="https://github.com/user-attachments/assets/3b07589d-8426-4cf8-bf61-a2142897b0a8" /> |
+| **Use case diagram** | <img width="648" height="167" alt="image" src="/assets/images/sysreq/19.png" /> |
 | **Postconditions** | *The knockout stage matches are created and visible in the tournament schedule.* |
 
 ## FR-20 - Tournament statistics consultation
@@ -308,7 +308,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *Match results and statistics must be available in the system.* |
 | **Actor** | *Participant, Captain, Organizer* |
 | **Main flow** | 1. The actor accesses the statistics section. <br>2. The actor selects the desired statistics category. <br>3. The system retrieves and displays the statistics. |
-| **Use case diagram** | <img width="664" height="170" alt="image" src="https://github.com/user-attachments/assets/7c144702-1fd7-4d1b-b83d-d0d68bc262b5" /> |
+| **Use case diagram** | <img width="664" height="170" alt="image" src="/assets/images/sysreq/20.png" /> |
 | **Postconditions** | *The requested tournament statistics are displayed to the user.* |
 
 
@@ -322,7 +322,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *Users must be authenticated in the system.* |
 | **Actor** | *Administrator* |
 | **Main Flow** | 1. A user attempts to access a system function. <br>2. The system verifies the user role. <br>3. The system checks whether the role has permission for the requested action. <br>4. The system allows or denies access accordingly. |
-| **Use Case Diagram** | <img width="831" height="660" alt="image" src="https://github.com/user-attachments/assets/3a398ab4-26ac-426b-bf5b-54f7e0b78134" />|
+| **Use Case Diagram** | <img width="831" height="660" alt="image" src="/assets/images/sysreq/21.png" />|
 | **Postconditions** | *System access is restricted according to the permissions assigned to each role.* |
 
 
@@ -336,7 +336,7 @@ Below is the list of all requirements classified according to their type.
 | **Preconditions** | *Users must be interacting with the platform.* |
 | **Actor** | *Administrator* |
 | **Main Flow** | 1. A user performs an action within the system. <br>2. The system records the action in the audit log. <br>3. The administrator can consult the recorded logs. |
-| **Use Case Diagram** | <img width="618" height="160" alt="image" src="https://github.com/user-attachments/assets/4975e645-938e-4d67-8da5-1132174efb64" /> |
+| **Use Case Diagram** | <img width="618" height="160" alt="image" src="/assets/images/sysreq/22.png" /> |
 | **Postconditions** | *Relevant system actions are recorded and available for administrative monitoring.* |
 
 
