@@ -31,6 +31,16 @@
 					{% endif %}
 				{% endfor %}
 			</div>
+
+			<div class="nav-section">
+				<div class="nav-section-title">Sprints</div>
+				<a href="/sprints/" {% if page.url == "/sprints/" %}class="active"{% endif %}>Overview</a>
+				{% for p in site.pages %}
+					{% if p.url contains "/sprints/" and p.url != "/sprints/" %}
+						<a href="{{ p.url }}" {% if page.url == p.url %}class="active"{% endif %}>{{ p.title }}</a>
+					{% endif %}
+				{% endfor %}
+			</div>
 		</nav>
 
 		<div class="sidebar-footer">
