@@ -37,3 +37,12 @@ Currently, the tournament presents the following difficulties:
 
 Design and implement a web platform that enables the organized, centralized, and transparent management of the semester soccer tournament
 for the Systems Engineering, Artificial Intelligence, Cybersecurity, and Statistics programs.
+
+## Team
+
+- Ángela Sofía Gómez Valencia
+- Paula Valentina Lozano Castañeda
+- Samuel Felipe Castelblanco Tellez
+- Tomas Olaya Diaz
+- Juan Diego Patiño Muñoz
+
