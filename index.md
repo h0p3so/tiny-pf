@@ -5,6 +5,8 @@ title: Tech Cup
 
 # Tech Cup
 
+![icon](/assets/favicon.png)
+
 <p class="lead">Digital platform for managing the semester football tournament of the Systems Engineering at ECI.</p>
 
 ## Summary
