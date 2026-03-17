@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Sprint 4 – Security & CI/CD
+title: Sprint 4
 ---
 
 This section describes the definition of **Sprint 4**, focused on securing the **TechCup Fútbol** backend with Spring Security and JWT authentication, and automating the build, test, and deployment pipeline using GitHub Actions and Azure.

@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Sprint 2 – SpringBoot API REST
+title: Sprint 2
 ---
 
 This section describes the definition of **Sprint 2**, focused on structuring the backend of the **TechCup Fútbol** platform using Spring Boot and exposing the first REST API endpoints for the core features: Authentication, Users, and Tournaments.

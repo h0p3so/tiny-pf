@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Sprint 3 – Data Persistence & Image Microservice
+title: Sprint 3
 ---
 
 This section describes the definition of **Sprint 3**, focused on replacing the in-memory data layer with real persistence using **JPA + PostgreSQL** for the main project, and building an independent **image microservice** backed by **MongoDB**.
