@@ -1,0 +1,21 @@
+
+	tinypf: implementation of `fprintf` function from libc for x86_64
+API
+	tiny_pf
+
+
+
+Basic %d %u %x %s %c %p %%
+Width and precision
+Flags (- + 0 #)
+Length modifiers
+Buffered output
+Floating-point formats
+Positional parameters
+Thread safety
+Locale support
+GNU extensions
+
+Fast format scanning
+
+Scan 8 bytes at a time looking for:
