@@ -40,12 +40,12 @@ xvargs_init:
 	movq	%rsp, %rbp
 	movq	._xvargs_callers_rbp(%rip), %rax
 	testq	%rax, %rax
-	jnz		._xvargs_fatal_busy_address
+	jnz	._xvargs_fatal_busy_address
 	leaq	._xvargs_callers_rbp(%rip), %rax
 	movq	%rdi, (%rax)
 #ifdef XVARG_SAFE
 	cmpq	$0, %rsi
-	jle		._xvargs_fatal_unexpected_limit
+	jle	._xvargs_fatal_unexpected_limit
 	leaq	._xvargs_safe_limit(%rip), %rax
 	movq	%rsi, (%rax)
 	leaq	._xvargs_safe_default(%rip), %rax
@@ -61,13 +61,13 @@ xvargs_next:
 	movq	._xvargs_safe_limit(%rip), %rax
 	movq	._xvargs_stack_offset(%rip), %rcx
 	cmpq	%rax, %rcx
-	jae		._xvargs_next_return_default
+	jae	._xvargs_next_return_default
 #endif
 	movq	._xvargs_callers_rbp(%rip), %rbx
 	movq	._xvargs_stack_offset(%rip), %rax
-	#       | rbp				 0(offset from rbp)
+	#       | rbp                    0(offset from rbp)
 	#       | return address	 8(offset from rbp)
-	# stack | arg1				16(offset from rbp) ._xvargs_stack_offset = 0
+	# stack | arg1                   16(offset from rbp) ._xvargs_stack_offset = 0
 	#       | arg2                       .          ._xvargs_stack_offset = 1
 	#       | arg3                       .          ._xvargs_stack_offset = 2
 	#       v                            .
