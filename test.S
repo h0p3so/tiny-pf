@@ -1,5 +1,5 @@
 .section .rodata
-	.fmt: .string "hello world from tiny-pf\n\0"
+	.fmt: .string "success: 99.9%\n"
 
 .section .text
 .globl _start

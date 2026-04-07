@@ -28,6 +28,12 @@
 	syscall
 .endm
 
+.macro _tiny_pf_put_in_buffer c
+	leaq	._tiny_pf_buffer(%rip), %rax
+	movq	-20(%rbp), %rcx
+	movb	\c, (%rax, %rcx)
+.endm
+
 .globl tiny_pf
 
 tiny_pf:
@@ -53,14 +59,27 @@ tiny_pf:
 	#
 	cmpb	$0, %dil
 	je	._tiny_pf_fini
-	cmpb	$'%', %dil
+	cmpb	$37, %dil
 	je	._tiny_pf_loop_fmt_found
 	#
-	leaq	._tiny_pf_buffer(%rip), %rax
-	movq	-20(%rbp), %rcx
-	movb	%dil, (%rax, %rcx)
+	_tiny_pf_put_in_buffer %dil
 	jmp	._tiny_pf_loop_advance
 ._tiny_pf_loop_fmt_found:
+	incq	%rax
+	movzbl	(%rax), %edi
+	#
+	cmpb	$37, %dil
+	je	._tiny_pf_loop_fmt_found_per
+	cmpb	$99, %dil
+	je	._tiny_pf_loop_fmt_found_chr
+	#
+
+._tiny_pf_loop_fmt_found_per:	
+	_tiny_pf_put_in_buffer $37
+	jmp	._tiny_pf_loop_advance
+._tiny_pf_loop_fmt_found_chr:
+
+
 
 ._tiny_pf_loop_advance:
 	incq	-12(%rbp)
