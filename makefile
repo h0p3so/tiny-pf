@@ -1,17 +1,19 @@
-otest = test.o
-otiny = tinypf.o
-oxvargs = xvargs.o
-final = tiny-pf
+OTEST = test.o
+OTINY = tinypf.o
+OXVARGS = xvargs.o
+FINAL = tiny-pf
+DEBUG_VARS = -g -O0 -fno-omit-frame-pointer
+XVARGS_MACROS =
 
-all: $(final)
+all: $(FINAL)
 
-$(final): $(oxvargs) $(otest) $(otiny)
-	ld	$(oxvargs) $(otest) $(otiny) -o $(final)
-$(oxvargs):
-	gcc	-c xvargs.S -o $(oxvargs) # -DXVARG_SAFE
-$(otest):
-	gcc	-c test.S -o $(otest)
-$(otiny):
-	gcc	-c tiny-pf.S -o $(otiny)
+$(FINAL): $(OXVARGS) $(OTEST) $(OTINY)
+	gcc	-g $(OXVARGS) $(OTEST) $(OTINY) -o $(FINAL) -nostartfiles
+$(OXVARGS):
+	gcc	-c xvargs.S -o $(OXVARGS) $(DEBUG_VARS) $(XVARGS_MACROS)
+$(OTEST):
+	gcc	-c test.S -o $(OTEST) $(DEBUG_VARS)
+$(OTINY):
+	gcc	-c tiny-pf.S -o $(OTINY) $(DEBUG_VARS)
 clean:
-	rm -f $(final) $(otest) $(otiny) $(oxvargs)
+	rm -f $(FINAL) $(OTEST) $(OTINY) $(OXVARGS)

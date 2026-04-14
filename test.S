@@ -1,11 +1,11 @@
 .section .rodata
-	.fmt: .string "success for %c is 99.9%\n"
+	.fmt: .string "success for %c is 99.9%%\n"
 
 .section .text
 .globl _start
 
 _start:
-	pushq	$'J'
+	pushq	$'A'
 
 	movl	$1, %edi
 	leaq	.fmt(%rip), %rsi

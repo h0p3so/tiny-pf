@@ -45,11 +45,12 @@ tiny_pf:
 	#  -4(%rbp): fd
 	# -12(%rbp): fmt string (ptr)
 	# -20(%rbp): bytes written into buffer so far
-	#
+	# -24(%rbp): alignment type (< or >)
 	#
 	#
 	movl	%edi, -4(%rbp)
 	movq	%rsi, -12(%rbp)
+	movq	$0, -20(%rbp)
 	#
 	# xvargs initialization
 	#
@@ -66,23 +67,33 @@ tiny_pf:
 	cmpb	$0, %dil
 	je	._tiny_pf_fini
 	cmpb	$37, %dil
-	je	._tiny_pf_loop_fmt_found
+	je	._tiny_pf_loop_parse
 	#
 	_tiny_pf_put_in_buffer %dil
 	jmp	._tiny_pf_loop_advance
-._tiny_pf_loop_fmt_found:
+._tiny_pf_loop_parse:
 	incq	%rax
 	movzbl	(%rax), %edi
 	# finding format ------
 	cmpb	$37, %dil
-	je	._tiny_pf_loop_fmt_found_per
+	je	._tiny_pf_loop_parse_per
+	cmpb	$60, %dil
+	je	._tiny_pf_loop_parse_alignment
+	cmpb	$62, %dil
+	je	._tiny_pf_loop_parse_alignment
+._tiny_pf_loop_parse_pick_specifier:
 	cmpb	$99, %dil
-	je	._tiny_pf_loop_fmt_found_chr
+	je	._tiny_pf_loop_parse_chr
 	# ------ finding format
-._tiny_pf_loop_fmt_found_per:	
+
+._tiny_pf_loop_parse_alignment:
+	movl	%edi, -24(%rbp)
+	jmp	._tiny_pf_loop_parse_pick_specifier
+._tiny_pf_loop_parse_per:
 	_tiny_pf_put_in_buffer $37
+	incq	-12(%rbp)
 	jmp	._tiny_pf_loop_advance
-._tiny_pf_loop_fmt_found_chr:
+._tiny_pf_loop_parse_chr:
 	call	xvargs_next
 	movl	%eax, %edi
 	_tiny_pf_put_in_buffer %dil
@@ -102,8 +113,8 @@ tiny_pf:
 	call	xvargs_fini
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), -20(%rbp), -4(%rbp)
 	# TODO: get _tiny_pf_mid_flushes * 4096 + current bytes written
-	movq	-20(%rbp), %rax
 	movq	$0, ._tiny_pf_mid_flushes(%rip)
+	movq	-20(%rbp), %rax
 	leave
 	ret
 

@@ -22,17 +22,15 @@ API
 		%u		format for a unsigned integer
 		%x		hexadecimal integer formatting
 		%o		octal integer formatting
-		%#*		right aligment
-			#: unsigned int representing width
-			*: integer formatting (d, u, x o)
-		%0*		zero padding
-			0: literal '0' is mandatory
-			*: integer formatting (d, u, x o)
-		%-#*	left aligment
-			-: literal '-' is mandatory
-			#: unsigned int representing width
-			*: integer formatting (d, u, x o)
 		%b		format for boolean (prints TINY_PF_LONG_BOOL_FMT)
+		%>#*		right aligment
+			>: literal '>' is mandatory
+			#: unsigned int representing width
+			*: formatting (c, s, d, u, x, o, b)
+		%<#*		left aligment
+			>: literal '<' is mandatory
+			#: unsigned int representing width
+			*: formatting (c, s, d, u, x, o, b)
 	- extra arguments: values to which formats specified in `format` string will be
 	mapped to. Remember this library heavily depends on xvargs, therefore all these
 	arguments needs to be pushed into the stack in the reverse order they need to be
