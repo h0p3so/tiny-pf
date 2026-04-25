@@ -12,6 +12,9 @@
 #endif
 	._tiny_pf_buffer_capacity: .quad 4096
 
+	._tiny_pf_fatal_unk_fmt_msg: .string "tiny-pf: unknown format!\n"
+	._tiny_pf_fatal_unk_fmt_len: .quad   25
+
 .section .bss
 	._tiny_pf_buffer:      .zero 4096
 	# indicates the number of times tiny_pf had to flush since the
@@ -25,6 +28,13 @@
 	movl	\fd, %edi
 	leaq	\buffer, %rsi
 	movq	\size, %rdx
+	syscall
+.endm
+
+.macro _tiny_pf_fatal buffer, size
+	_tiny_pf_flush \buffer, \size, $2
+	movq	$60, %rax
+	movq	$39, %rdi
 	syscall
 .endm
 
@@ -72,7 +82,16 @@ tiny_pf:
 	_tiny_pf_put_in_buffer %dil
 	jmp	._tiny_pf_loop_advance
 ._tiny_pf_loop_parse:
-	incq	%rax
+	# right now we have
+	# fmtstring: "some text %x"
+	#                       |\
+	#   -12(%rbp) is here  / |
+	#                       /
+	# after these 3 loc (above) we'll
+	# be here, so we can know what to
+	# parse
+	incq	-12(%rbp)
+	movq	-12(%rbp), %rax
 	movzbl	(%rax), %edi
 	# finding format ------
 	cmpb	$37, %dil
@@ -86,18 +105,18 @@ tiny_pf:
 	je	._tiny_pf_loop_parse_chr
 	# ------ finding format
 
+	_tiny_pf_fatal ._tiny_pf_fatal_unk_fmt_msg(%rip), ._tiny_pf_fatal_unk_fmt_len(%rip)
+
 ._tiny_pf_loop_parse_alignment:
 	movl	%edi, -24(%rbp)
 	jmp	._tiny_pf_loop_parse_pick_specifier
 ._tiny_pf_loop_parse_per:
 	_tiny_pf_put_in_buffer $37
-	incq	-12(%rbp)
 	jmp	._tiny_pf_loop_advance
 ._tiny_pf_loop_parse_chr:
 	call	xvargs_next
 	movl	%eax, %edi
 	_tiny_pf_put_in_buffer %dil
-	incq	-12(%rbp)
 	jmp	._tiny_pf_loop_advance
 
 ._tiny_pf_loop_advance:
