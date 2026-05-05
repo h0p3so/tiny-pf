@@ -21,6 +21,8 @@
 	# buffer reached its max capacity
 	._tiny_pf_mid_flushes: .zero 8
 
+	._tiny_pf_padding: .zero 8
+
 .section .text
 
 .macro _tiny_pf_flush buffer, size, fd
@@ -62,7 +64,7 @@ tiny_pf:
 	# -12(%rbp): fmt string (ptr)
 	# -20(%rbp): bytes written into buffer so far
 	# -24(%rbp): alignment type (< or >)
-	# -32(%rbp): alignment size
+	# -32(%rbp): alignment size (padding)
 	#
 	movl	%edi, -4(%rbp)
 	movq	%rsi, -12(%rbp)
@@ -120,7 +122,14 @@ tiny_pf:
 	jne	._tiny_pf_loop_parse_alignment_parse
 	call	xvargs_next
 	movq	%rax, -32(%rbp)
+	jmp	._tiny_pf_loop_parse_pick_specifier
+
 ._tiny_pf_loop_parse_alignment_parse:
+	leaq	-12(%rbp), %rdi
+	movl	$10, %esi
+	call	_tiny_pf_function_parse_number
+	movq	%rax, -32(%rbp)
+	jmp	._tiny_pf_loop_parse_pick_specifier
 
 
 ._tiny_pf_loop_parse_per:
@@ -164,7 +173,6 @@ tiny_pf:
 # esi: base
 #
 # _if no number is found, zero is returned
-.globl _tiny_pf_function_parse_number # TODO rm
 _tiny_pf_function_parse_number:
 	pushq	%rbp
 	movq	%rsp, %rbp
@@ -178,19 +186,25 @@ _tiny_pf_function_parse_number:
 	movq	$0, -20(%rbp)
 .__tiny_pf_function_parse_number_parse:
 	movq	-8(%rbp), %rax
-	#movq	(%rax), %rax
+	movq	(%rax), %rax
 	movzbl	(%rax), %edi
 	call	_tiny_pf_function_isdigit
 	cmpq	$0, %rax
 	je	.__tiny_pf_function_parse_number_fini
-	#  result * base + (*s - '0');
+	#  result * base + (*s - '0')
 	subb	$48, %dil
 	movq	-20(%rbp), %rax
 	movl	-12(%rbp), %esi
 	mulq	%rsi
 	addq	%rdi, %rax
 	movq	%rax, -20(%rbp)
-	incq	-8(%rbp)
+	#
+	movq	-8(%rbp), %rax
+	movq	(%rax), %rax
+	leaq	1(%rax), %rdx
+	movq	-8(%rbp), %rax
+	movq	%rdx, (%rax)
+	#
 	jmp	.__tiny_pf_function_parse_number_parse
 .__tiny_pf_function_parse_number_fini:
 	movq	-20(%rbp), %rax
