@@ -168,6 +168,12 @@ tiny_pf:
 	# *: alignment size
 	# s: actual format
 	#
+
+	movq	-32(%rbp), %rdi
+	movq	$60, %rax
+	syscall
+
+
 	_tiny_pf_eat_and_load
 	jmp	._tiny_pf_loop_parse_get_format
 

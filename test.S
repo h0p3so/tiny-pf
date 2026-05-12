@@ -1,12 +1,12 @@
 .section .rodata
-	.fmt: .string "%<zd\n"
+	.fmt: .string "%<#d\n"
 	.test: .string "0123"
 
 .section .text
 .globl _start
 
 _start:
-	pushq	$'A'
+	pushq	$69
 
 	movl	$1, %edi
 	leaq	.fmt(%rip), %rsi
