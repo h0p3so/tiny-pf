@@ -1,12 +1,12 @@
 .section .rodata
-	.fmt: .string "%<#d\n"
+	.fmt: .string "score: %c\n"
 	.test: .string "0123"
 
 .section .text
 .globl _start
 
 _start:
-	pushq	$69
+	pushq	$'A'
 
 	movl	$1, %edi
 	leaq	.fmt(%rip), %rsi
