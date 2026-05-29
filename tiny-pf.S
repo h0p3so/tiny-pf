@@ -18,10 +18,10 @@
 	._tiny_pf_fatal_inv_alig_len: .quad   38
 	# ----- Errors
 
-	._tiny_pf_buffer_capacity:    .quad 4096
+	._tiny_pf_buffer_capacity:    .quad 1
 
 .section .bss
-	._tiny_pf_buffer: .zero 4096
+	._tiny_pf_buffer: .zero 1
 
 .section .text
 
@@ -65,6 +65,14 @@
 	movb	\c, (%rax, %rcx)
 .endm
 
+.macro _tiny_pf_perform_mid_flush size, jmp2
+	_tiny_pf_flush ._tiny_pf_buffer(%rip), \size, -4(%rbp)
+	movq	\size, %r8
+	addq	%r8, -40(%rbp)
+	movq	$0, -20(%rbp)
+	jmp	\jmp2
+.endm
+
 .globl tiny_pf
 
 tiny_pf:
@@ -78,7 +86,7 @@ tiny_pf:
 	# -20(%rbp): bytes written into buffer so far
 	# -24(%rbp): current alignment type
 	# -32(%rbp): current alignment size
-	# -40(%rbp): number of mid flushes
+	# -40(%rbp): bytes written due to mid flushes
 	# -48(%rbp): argument's length
 	# -56(%rbp): number of ' 's while aligning
 	# -64(%rbp): last value poped via xvargs
@@ -101,7 +109,8 @@ tiny_pf:
 ._tiny_pf_loop:
 	movq	-20(%rbp), %rax
 	cmpq	._tiny_pf_buffer_capacity(%rip), %rax
-	jae	._tiny_pf_perform_mid_flush
+	jb	._tiny_pf_loop_eat
+	_tiny_pf_perform_mid_flush ._tiny_pf_buffer_capacity(%rip), ._tiny_pf_loop_eat
 ._tiny_pf_loop_eat:
 	movq	-12(%rbp), %rax
 	movzbl	(%rax), %edi
@@ -177,7 +186,6 @@ tiny_pf:
 	#
 	_tiny_pf_eat_and_load
 	jmp	._tiny_pf_loop_parse_get_format
-
 ._tiny_pf_loop_parse_per:
 	_tiny_pf_put_in_buffer $37
 	jmp	._tiny_pf_loop_advance
@@ -187,13 +195,16 @@ tiny_pf:
 	movq	$1, -48(%rbp)
 	movq	$0, -72(%rbp)
 	jmp	._tiny_pf_loop_parse_write_out
-
+#
+# Once the alignment type, alignment size and format type are correctly defined,
+# tiny-pf needs to write the argument given the parameters set
+#
 ._tiny_pf_loop_parse_write_out:
 	movl	-24(%rbp), %eax
 	cmpl	$0, %eax
-	je	._tiny_pf_loop_parse_write_out_write
+	je	._tiny_pf_loop_parse_write_out_write_validate
 	cmpl	$60, %eax
-	je	._tiny_pf_loop_parse_write_out_write
+	je	._tiny_pf_loop_parse_write_out_write_validate
 	#
 	# _if it is right-aligned, get the difference
 	# between the alignment and the argument's length
@@ -202,12 +213,22 @@ tiny_pf:
 	# the alignment size
 	#
 	cmpq	-48(%rbp), %rax
-	jae	._tiny_pf_loop_parse_write_out_write
+	jae	._tiny_pf_loop_parse_write_out_write_validate
 	subq	-48(%rbp), %rax
 	movq	%rax, -58(%rbp)
-
-._tiny_pf_loop_parse_write_out_write:
-	# TODO: check boundaries
+#
+# Since tiny-pf already knows the length in bytes of the argument, it will
+# see if it fits in the current buffer's capacity
+#
+._tiny_pf_loop_parse_write_out_write_validate:
+	movq	-20(%rbp), %rax
+	addq	-48(%rbp), %rax
+	cmpq	._tiny_pf_buffer_capacity(%rip), %rax
+	jae	._tiny_pf_loop_parse_write_out_write_validate_veredict_is_overflow
+	jmp	._tiny_pf_loop_parse_write_out_write_validate_veredict_is_no_error
+._tiny_pf_loop_parse_write_out_write_validate_veredict_is_overflow:
+	_tiny_pf_perform_mid_flush -20(%rbp), ._tiny_pf_loop_parse_write_out_write_validate_veredict_is_no_error
+._tiny_pf_loop_parse_write_out_write_validate_veredict_is_no_error:
 	xorq	%r8, %r8
 ._tiny_pf_loop_parse_write_out_write_loop:
 	cmpq	-48(%rbp), %r8
@@ -231,17 +252,12 @@ tiny_pf:
 	jmp	._tiny_pf_loop_advance
 	# TODO: clean up
 
-
-._tiny_pf_perform_mid_flush:
-	_tiny_pf_flush ._tiny_pf_buffer(%rip), ._tiny_pf_buffer_capacity(%rip), -4(%rbp)
-	incq	-40(%rbp)
-	movq	$0, -20(%rbp)
-	jmp	._tiny_pf_loop_eat
 ._tiny_pf_fini:
-	# TODO: mid flushes
-	call	xvargs_fini
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), -20(%rbp), -4(%rbp)
+	# returns the current number of bytes plus the number of bytes
+	# written during mid flushes
 	movq	-20(%rbp), %rax
+	addq	-40(%rbp), %rax
 	leave
 	ret
 
