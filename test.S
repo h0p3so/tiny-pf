@@ -1,5 +1,6 @@
+
 .section .rodata
-	.fmt: .string "s%c\n"
+	.fmt: .string "success:%>3c\n"
 	.test: .string "0123"
 
 .section .text
@@ -31,3 +32,6 @@ _start:
 	movq	%rax, %rdi
 	movq	$60, %rax
 	syscall
+
+
+# buff addr: 0x555555558010      93824992247824

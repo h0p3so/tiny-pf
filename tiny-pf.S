@@ -66,6 +66,9 @@
 	incq	-20(%rbp)
 .endm
 
+#
+# Writes `size` bytes from the buffer and jumps to `jmp2` address
+#
 .macro _tiny_pf_perform_mid_flush size, jmp2
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), \size, -4(%rbp)
 	movq	\size, %r8
@@ -184,7 +187,7 @@ tiny_pf:
 	# *: alignment size
 	# s: actual format
 	#
-	_tiny_pf_eat_and_load
+	# _tiny_pf_eat_and_load TODO: CHECK!
 	jmp	._tiny_pf_loop_parse_get_format
 ._tiny_pf_loop_parse_per:
 	_tiny_pf_put_in_buffer $37
@@ -200,22 +203,42 @@ tiny_pf:
 # tiny-pf needs to write the argument given the parameters set
 #
 ._tiny_pf_loop_parse_write_out:
+	#
+	# is there not alignment or is it left-aligned?
+	#
 	movl	-24(%rbp), %eax
 	cmpl	$0, %eax
 	je	._tiny_pf_loop_parse_write_out_write_validate
 	cmpl	$60, %eax
 	je	._tiny_pf_loop_parse_write_out_write_validate
 	#
-	# _if it is right-aligned, get the difference
-	# between the alignment and the argument's length
+	# _if arglen >= alignsize: ignore alignment
 	#
-	# Ignore the alignment if the argument's length exceeds
-	# the alignment size
-	#
-	cmpq	-48(%rbp), %rax
+	movq	-48(%rbp), %rax
+	cmpq	-32(%rbp), %rax
 	jae	._tiny_pf_loop_parse_write_out_write_validate
+
+	#
+	# given arglen < alignsize -> nofill = alignsize - arglen
+	#
+	movq	-32(%rbp), %rax
 	subq	-48(%rbp), %rax
-	movq	%rax, -58(%rbp)
+	movq	%rax, -56(%rbp)
+
+
+	# XXX: maybe pass a pointer to -20(%rbp) instead?
+	leaq	._tiny_pf_buffer(%rip), %rdi
+	addq	-20(%rbp), %rdi
+	movq	-56(%rbp), %rsi
+	movq	$' ', %rdx
+	call	_tiny_pf_function_fill
+	addq	%rax, -20(%rbp)
+
+	# TODO: call alignment from here
+
+#XXX: size < align && align < (bytes_written + buffer_cap) ==> size < (bytes_written + buffer_cap)
+
+
 #
 # Since tiny-pf already knows the length in bytes of the argument, it will
 # see if it fits in the current buffer's capacity
@@ -224,11 +247,9 @@ tiny_pf:
 	movq	-20(%rbp), %rax
 	addq	-48(%rbp), %rax
 	cmpq	._tiny_pf_buffer_capacity(%rip), %rax
-	jae	._tiny_pf_loop_parse_write_out_write_validate_veredict_is_overflow
-	jmp	._tiny_pf_loop_parse_write_out_write_validate_veredict_is_no_error
-._tiny_pf_loop_parse_write_out_write_validate_veredict_is_overflow:
-	_tiny_pf_perform_mid_flush -20(%rbp), ._tiny_pf_loop_parse_write_out_write_validate_veredict_is_no_error
-._tiny_pf_loop_parse_write_out_write_validate_veredict_is_no_error:
+	jb	._tiny_pf_loop_parse_write_out_write
+	_tiny_pf_perform_mid_flush -20(%rbp), ._tiny_pf_loop_parse_write_out_write
+._tiny_pf_loop_parse_write_out_write:
 	xorq	%r8, %r8
 ._tiny_pf_loop_parse_write_out_write_loop:
 	cmpq	-48(%rbp), %r8
@@ -246,7 +267,6 @@ tiny_pf:
 	_tiny_pf_put_in_buffer %dil
 	incq	%r8
 	jmp	._tiny_pf_loop_parse_write_out_write_loop
-
 ._tiny_pf_loop_parse_write_out_finished:
 	jmp	._tiny_pf_loop_advance
 	# TODO: clean up
@@ -275,7 +295,6 @@ tiny_pf:
 #
 # _if no number is found, zero is returned
 
-.globl _tiny_pf_function_parse_number
 _tiny_pf_function_parse_number:
 	pushq	%rbp
 	movq	%rsp, %rbp
@@ -328,5 +347,38 @@ _tiny_pf_function_isdigit:
 .__tiny_pf_function_isdigit_no:
 	movq	$0, %rax
 .__tiny_pf_function_isdigit_fini:
+	ret
+
+# basically memset: (char**, u64, u64) -> u64
+# rdi: pointer to content
+# rsi: number of bytes to fill
+# rdx: value to fill with (ascii char)
+#
+# number of bytes written
+_tiny_pf_function_fill:	
+	pushq	%rbp
+	movq	%rsp, %rbp
+	subq	$32, %rsp
+	# stack variables --------------
+	#  -8(%rbp): address of source
+	# -16(%rbp): number of bytes to fill
+	# -24(%rbp): value to fill with (ascii char)
+	# -32(%rbp): number of bytes filled so far
+	movq	%rdi,  -8(%rbp)
+	movq	%rsi, -16(%rbp)
+	movq	%rdx, -24(%rbp)
+	movq	$0,   -32(%rbp)
+.__tiny_pf_function_fill_loop:
+	movq	-32(%rbp), %rcx
+	cmpq	-16(%rbp), %rcx
+	jae	.__tiny_pf_function_fill_fini
+	movq	-8(%rbp), %rax
+	movq	-24(%rbp), %rbx
+	movb	%bl, (%rax, %rcx)
+	incq	-32(%rbp)
+	jmp	.__tiny_pf_function_fill_loop
+.__tiny_pf_function_fill_fini:
+	movq	-32(%rbp), %rax
+	leave
 	ret
 
