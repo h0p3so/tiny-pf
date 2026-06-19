@@ -1,21 +1,45 @@
 
-	tinypf: implementation of `fprintf` function from libc for x86_64
+	tiny-pf: implementation of `fprintf` function from libc for x86_64
+DEPENDENCIES
+	This library depends on `xvargs` (github.com/h0p3so/xvargs/) to parse variadic
+	arguments
 API
-	tiny_pf
+	* TINY_PF_LONG_BOOL_FMT: if defined, %b will be parsed into 'true' or 'false', 'T' or 'F'
+	will be used otherwise (by default is not defined)
 
+	* tiny_pf(fd, format, ...)
+	          |    `      ~~~ pushed into stack (xvargs)
+            rdi     `- rsi
 
+	- fd: unsigned int which represents the file descriptor. tiny_pf will output to such fd.
+	- format: string literal which specifies the content to be printed and the formatting
+		%%		prints '%' literal
+		%c		format for a character
+		%s		format for a string
+		%d		format for a signed integer
+		%u		format for a unsigned integer
+		%x		hexadecimal integer formatting
+		%o		octal integer formatting
+		%#*		right aligment
+			#: unsigned int representing width
+			*: integer formatting (d, u, x o)
+		%0*		zero padding
+			0: literal '0' is mandatory
+			*: integer formatting (d, u, x o)
+		%-#*	left aligment
+			-: literal '-' is mandatory
+			#: unsigned int representing width
+			*: integer formatting (d, u, x o)
+		%b		format for boolean (prints TINY_PF_LONG_BOOL_FMT)
+	- extra arguments: values to which formats specified in `format` string will be
+	mapped to. Remember this library heavily depends on xvargs, therefore all these
+	arguments needs to be pushed into the stack in the reverse order they need to be
+	used
+EXAMPLE
 
-Basic %d %u %x %s %c %p %%
-Width and precision
-Flags (- + 0 #)
-Length modifiers
-Buffered output
-Floating-point formats
-Positional parameters
-Thread safety
-Locale support
-GNU extensions
+ERRORS
+
+NOTES
 
 Fast format scanning
-
 Scan 8 bytes at a time looking for:
