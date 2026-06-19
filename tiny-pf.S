@@ -187,7 +187,6 @@ tiny_pf:
 	# *: alignment size
 	# s: actual format
 	#
-	# _tiny_pf_eat_and_load TODO: CHECK!
 	jmp	._tiny_pf_loop_parse_get_format
 ._tiny_pf_loop_parse_per:
 	_tiny_pf_put_in_buffer $37
@@ -200,7 +199,7 @@ tiny_pf:
 	jmp	._tiny_pf_loop_parse_write_out
 #
 # Once the alignment type, alignment size and format type are correctly defined,
-# tiny-pf needs to write the argument given the parameters set
+# tiny-pf needs to write the argument given the parameters found
 #
 ._tiny_pf_loop_parse_write_out:
 	#
@@ -217,28 +216,21 @@ tiny_pf:
 	movq	-48(%rbp), %rax
 	cmpq	-32(%rbp), %rax
 	jae	._tiny_pf_loop_parse_write_out_write_validate
-
 	#
 	# given arglen < alignsize -> nofill = alignsize - arglen
 	#
-	movq	-32(%rbp), %rax
-	subq	-48(%rbp), %rax
-	movq	%rax, -56(%rbp)
-
-
-	# XXX: maybe pass a pointer to -20(%rbp) instead?
+	movq	-32(%rbp), %rax				# |
+	subq	-48(%rbp), %rax				# |
+	movq	%rax, -56(%rbp)				# XXX: turn this into a macro
+	#
 	leaq	._tiny_pf_buffer(%rip), %rdi
 	addq	-20(%rbp), %rdi
 	movq	-56(%rbp), %rsi
 	movq	$' ', %rdx
 	call	_tiny_pf_function_fill
 	addq	%rax, -20(%rbp)
-
-	# TODO: call alignment from here
-
-#XXX: size < align && align < (bytes_written + buffer_cap) ==> size < (bytes_written + buffer_cap)
-
-
+	#
+	jmp	._tiny_pf_loop_parse_write_out_write_validate
 #
 # Since tiny-pf already knows the length in bytes of the argument, it will
 # see if it fits in the current buffer's capacity
@@ -268,8 +260,12 @@ tiny_pf:
 	incq	%r8
 	jmp	._tiny_pf_loop_parse_write_out_write_loop
 ._tiny_pf_loop_parse_write_out_finished:
+	movl	$0, -24(%rbp)
+	movq	$0, -32(%rbp)
+	movq	$0, -48(%rbp)
+	movq	$0, -56(%rbp)
+	movq	$0, -72(%rbp)
 	jmp	._tiny_pf_loop_advance
-	# TODO: clean up
 
 ._tiny_pf_fini:
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), -20(%rbp), -4(%rbp)
@@ -350,7 +346,7 @@ _tiny_pf_function_isdigit:
 	ret
 
 # basically memset: (char**, u64, u64) -> u64
-# rdi: pointer to content
+# rdi: pointer to source
 # rsi: number of bytes to fill
 # rdx: value to fill with (ascii char)
 #
