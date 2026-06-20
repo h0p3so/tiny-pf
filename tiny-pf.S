@@ -39,6 +39,7 @@
 tiny_pf:
 	pushq	%rbp
 	movq	%rsp, %rbp
+	movq	%rsp, %rdx
 	subq	$32, %rsp
 	# stack variables --------------
 	#  -4(%rbp): fd
@@ -49,6 +50,11 @@ tiny_pf:
 	#
 	movl	%edi, -4(%rbp)
 	movq	%rsi, -12(%rbp)
+	#
+	# xvargs initialization
+	#
+	movq	%rdx, %rdi
+	call	xvargs_init
 ._tiny_pf_loop:
 	movq	-20(%rbp), %rax
 	cmpq	._tiny_pf_buffer_capacity(%rip), %rax
@@ -67,19 +73,21 @@ tiny_pf:
 ._tiny_pf_loop_fmt_found:
 	incq	%rax
 	movzbl	(%rax), %edi
-	#
+	# finding format ------
 	cmpb	$37, %dil
 	je	._tiny_pf_loop_fmt_found_per
 	cmpb	$99, %dil
 	je	._tiny_pf_loop_fmt_found_chr
-	#
-
+	# ------ finding format
 ._tiny_pf_loop_fmt_found_per:	
 	_tiny_pf_put_in_buffer $37
 	jmp	._tiny_pf_loop_advance
 ._tiny_pf_loop_fmt_found_chr:
-
-
+	call	xvargs_next
+	movl	%eax, %edi
+	_tiny_pf_put_in_buffer %dil
+	incq	-12(%rbp)
+	jmp	._tiny_pf_loop_advance
 
 ._tiny_pf_loop_advance:
 	incq	-12(%rbp)
@@ -91,6 +99,7 @@ tiny_pf:
 	movq	$0, -20(%rbp)
 	jmp	._tiny_pf_loop_eat
 ._tiny_pf_fini:
+	call	xvargs_fini
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), -20(%rbp), -4(%rbp)
 	# TODO: get _tiny_pf_mid_flushes * 4096 + current bytes written
 	movq	-20(%rbp), %rax
