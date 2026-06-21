@@ -38,6 +38,12 @@
 	syscall
 .endm
 
+.macro _tiny_pf_eat_and_load
+	incq	-12(%rbp)
+	movq	-12(%rbp), %rax
+	movzbl	(%rax), %edi
+.endm
+
 .macro _tiny_pf_put_in_buffer c
 	leaq	._tiny_pf_buffer(%rip), %rax
 	movq	-20(%rbp), %rcx
@@ -56,7 +62,7 @@ tiny_pf:
 	# -12(%rbp): fmt string (ptr)
 	# -20(%rbp): bytes written into buffer so far
 	# -24(%rbp): alignment type (< or >)
-	#
+	# -32(%rbp): alignment size
 	#
 	movl	%edi, -4(%rbp)
 	movq	%rsi, -12(%rbp)
@@ -90,26 +96,33 @@ tiny_pf:
 	# after these 3 loc (above) we'll
 	# be here, so we can know what to
 	# parse
-	incq	-12(%rbp)
-	movq	-12(%rbp), %rax
-	movzbl	(%rax), %edi
-	# finding format ------
-	cmpb	$37, %dil
-	je	._tiny_pf_loop_parse_per
-	cmpb	$60, %dil
-	je	._tiny_pf_loop_parse_alignment
-	cmpb	$62, %dil
-	je	._tiny_pf_loop_parse_alignment
-._tiny_pf_loop_parse_pick_specifier:
-	cmpb	$99, %dil
-	je	._tiny_pf_loop_parse_chr
-	# ------ finding format
-
+	_tiny_pf_eat_and_load
+	# finding format -------------------------#
+	cmpb	$37, %dil                         #
+	je	._tiny_pf_loop_parse_per          #
+	cmpb	$60, %dil                         #
+	je	._tiny_pf_loop_parse_alignment    #
+	cmpb	$62, %dil                         #
+	je	._tiny_pf_loop_parse_alignment    #
+._tiny_pf_loop_parse_pick_specifier:              #
+	cmpb	$99, %dil                         #
+	je	._tiny_pf_loop_parse_chr          #
+	# finding format -------------------------#
 	_tiny_pf_fatal ._tiny_pf_fatal_unk_fmt_msg(%rip), ._tiny_pf_fatal_unk_fmt_len(%rip)
-
 ._tiny_pf_loop_parse_alignment:
 	movl	%edi, -24(%rbp)
-	jmp	._tiny_pf_loop_parse_pick_specifier
+	# right now we have
+	# fmtstring: "some text %*xs"
+	#                        |` need what's in here
+	#                 -12(%rbp)
+	_tiny_pf_eat_and_load
+	cmpb	$35, %dil
+	jne	._tiny_pf_loop_parse_alignment_parse
+	call	xvargs_next
+	movq	%rax, -32(%rbp)
+._tiny_pf_loop_parse_alignment_parse:
+
+
 ._tiny_pf_loop_parse_per:
 	_tiny_pf_put_in_buffer $37
 	jmp	._tiny_pf_loop_advance
@@ -135,5 +148,68 @@ tiny_pf:
 	movq	$0, ._tiny_pf_mid_flushes(%rip)
 	movq	-20(%rbp), %rax
 	leave
+	ret
+
+#  ____________________
+# < external functions >
+#  --------------------
+#         \   ^__^
+#          \  (oo)\_______
+#             (__)\       )\/\
+#                 ||----w |
+#                 ||     ||
+
+# basically atoi: (char**, u32) -> u64
+# rdi: mutable pointer to source char**
+# esi: base
+#
+# _if no number is found, zero is returned
+.globl _tiny_pf_function_parse_number # TODO rm
+_tiny_pf_function_parse_number:
+	pushq	%rbp
+	movq	%rsp, %rbp
+	# stack variables --------------
+	#  -8(%rbp): address of source
+	# -12(%rbp): base
+	# -20(%rbp): answer
+	subq	$32, %rsp
+	movq	%rdi, -8(%rbp)
+	movl	%esi, -12(%rbp)
+	movq	$0, -20(%rbp)
+.__tiny_pf_function_parse_number_parse:
+	movq	-8(%rbp), %rax
+	#movq	(%rax), %rax
+	movzbl	(%rax), %edi
+	call	_tiny_pf_function_isdigit
+	cmpq	$0, %rax
+	je	.__tiny_pf_function_parse_number_fini
+	#  result * base + (*s - '0');
+	subb	$48, %dil
+	movq	-20(%rbp), %rax
+	movl	-12(%rbp), %esi
+	mulq	%rsi
+	addq	%rdi, %rax
+	movq	%rax, -20(%rbp)
+	incq	-8(%rbp)
+	jmp	.__tiny_pf_function_parse_number_parse
+.__tiny_pf_function_parse_number_fini:
+	movq	-20(%rbp), %rax
+	leave
+	ret
+
+# basically isdigit: (u8) -> u64
+# dil: current character
+#
+# _if it is, one (1) is returned, zero (0) otherwise
+_tiny_pf_function_isdigit:
+	cmpb	$48, %dil
+	jb	.__tiny_pf_function_isdigit_no
+	cmpb	$57, %dil
+	ja	.__tiny_pf_function_isdigit_no
+	movq	$1, %rax
+	jmp	.__tiny_pf_function_isdigit_fini
+.__tiny_pf_function_isdigit_no:
+	movq	$0, %rax
+.__tiny_pf_function_isdigit_fini:
 	ret
 
