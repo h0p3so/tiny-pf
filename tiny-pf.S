@@ -10,21 +10,24 @@
 	._tiny_pf_bool_false_fmt_msg: .string "F"
 	._tiny_pf_bool_false_fmt_len: .quad    1
 #endif
-	._tiny_pf_buffer_capacity: .quad 4096
+	# Errors -----
+	._tiny_pf_fatal_unk_fmt_msg:  .string "tiny-pf: unknown format!\n"
+	._tiny_pf_fatal_unk_fmt_len:  .quad   25
 
-	._tiny_pf_fatal_unk_fmt_msg: .string "tiny-pf: unknown format!\n"
-	._tiny_pf_fatal_unk_fmt_len: .quad   25
+	._tiny_pf_fatal_inv_alig_msg: .string "tiny-pf: invalid alignment specifier!\n"
+	._tiny_pf_fatal_inv_alig_len: .quad   38
+	# ----- Errors
+
+	._tiny_pf_buffer_capacity:    .quad 4096
 
 .section .bss
-	._tiny_pf_buffer:      .zero 4096
-	# indicates the number of times tiny_pf had to flush since the
-	# buffer reached its max capacity
-	._tiny_pf_mid_flushes: .zero 8
-
-	._tiny_pf_padding: .zero 8
+	._tiny_pf_buffer: .zero 4096
 
 .section .text
 
+#
+# Flushes the current content of the buffer
+#
 .macro _tiny_pf_flush buffer, size, fd
 	movq	$1, %rax
 	movl	\fd, %edi
@@ -33,19 +36,29 @@
 	syscall
 .endm
 
+#
+# Displays error message and exits
+#
 .macro _tiny_pf_fatal buffer, size
 	_tiny_pf_flush \buffer, \size, $2
 	movq	$60, %rax
-	movq	$39, %rdi
+	movq	$1, %rdi
 	syscall
 .endm
 
+#
+# Advances by one input buffer and sets the character
+# into rdi
+#
 .macro _tiny_pf_eat_and_load
 	incq	-12(%rbp)
 	movq	-12(%rbp), %rax
 	movzbl	(%rax), %edi
 .endm
 
+#
+# Sets `c` character into output buffer
+#
 .macro _tiny_pf_put_in_buffer c
 	leaq	._tiny_pf_buffer(%rip), %rax
 	movq	-20(%rbp), %rcx
@@ -58,17 +71,21 @@ tiny_pf:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	movq	%rsp, %rdx
-	subq	$32, %rsp
+	subq	$48, %rsp
 	# stack variables --------------
 	#  -4(%rbp): fd
 	# -12(%rbp): fmt string (ptr)
 	# -20(%rbp): bytes written into buffer so far
-	# -24(%rbp): alignment type (< or >)
-	# -32(%rbp): alignment size (padding)
+	# -24(%rbp): current alignment type
+	# -32(%rbp): current alignment size
+	# -40(%rbp): number of mid flushes
 	#
 	movl	%edi, -4(%rbp)
 	movq	%rsi, -12(%rbp)
 	movq	$0, -20(%rbp)
+	movq	$0, -24(%rbp)
+	movq	$0, -32(%rbp)
+	movq	$0, -40(%rbp)
 	#
 	# xvargs initialization
 	#
@@ -81,23 +98,24 @@ tiny_pf:
 ._tiny_pf_loop_eat:
 	movq	-12(%rbp), %rax
 	movzbl	(%rax), %edi
-	#
+	# special characters -----
 	cmpb	$0, %dil
 	je	._tiny_pf_fini
 	cmpb	$37, %dil
 	je	._tiny_pf_loop_parse
-	#
+	# ----- special characters
 	_tiny_pf_put_in_buffer %dil
-	jmp	._tiny_pf_loop_advance
+._tiny_pf_loop_advance:
+	incq	-12(%rbp)
+	incq	-20(%rbp)
+	jmp	._tiny_pf_loop
 ._tiny_pf_loop_parse:
 	# right now we have
 	# fmtstring: "some text %x"
-	#                       |\
-	#   -12(%rbp) is here  / |
-	#                       /
-	# after these 3 loc (above) we'll
-	# be here, so we can know what to
-	# parse
+	#                       |` format (*)
+	#   -12(%rbp) is here </
+	#
+	# (*): whatever is x, will define what needs to be parsed
 	_tiny_pf_eat_and_load
 	# finding format -------------------------#
 	cmpb	$37, %dil                         #
@@ -106,31 +124,52 @@ tiny_pf:
 	je	._tiny_pf_loop_parse_alignment    #
 	cmpb	$62, %dil                         #
 	je	._tiny_pf_loop_parse_alignment    #
-._tiny_pf_loop_parse_pick_specifier:              #
+._tiny_pf_loop_parse_get_format:                  #
 	cmpb	$99, %dil                         #
 	je	._tiny_pf_loop_parse_chr          #
 	# finding format -------------------------#
+	#
+	# [[no return]]
 	_tiny_pf_fatal ._tiny_pf_fatal_unk_fmt_msg(%rip), ._tiny_pf_fatal_unk_fmt_len(%rip)
+	# [[no return]]
+	#
 ._tiny_pf_loop_parse_alignment:
 	movl	%edi, -24(%rbp)
 	# right now we have
 	# fmtstring: "some text %*xs"
-	#                        |` need what's in here
-	#                 -12(%rbp)
+	#
+	# *: current position of -12(%rbp), it is either `<` or `>` (rdi's value)
+	# x: this character either be a serie of digits [0-9] or `#`
+	# s: actual alignment specifier
+	#
 	_tiny_pf_eat_and_load
 	cmpb	$35, %dil
 	jne	._tiny_pf_loop_parse_alignment_parse
 	call	xvargs_next
 	movq	%rax, -32(%rbp)
-	jmp	._tiny_pf_loop_parse_pick_specifier
-
+	jmp	._tiny_pf_loop_parse_alignment_specifier_is_ok
 ._tiny_pf_loop_parse_alignment_parse:
 	leaq	-12(%rbp), %rdi
 	movl	$10, %esi
 	call	_tiny_pf_function_parse_number
 	movq	%rax, -32(%rbp)
-	jmp	._tiny_pf_loop_parse_pick_specifier
-
+	cmpq	$0, %rax
+	jne	._tiny_pf_loop_parse_alignment_specifier_is_ok
+	#
+	# [[no return]]
+	_tiny_pf_fatal ._tiny_pf_fatal_inv_alig_msg(%rip), ._tiny_pf_fatal_inv_alig_len(%rip)
+	# [[no return]]
+	#
+._tiny_pf_loop_parse_alignment_specifier_is_ok:
+	# right now we have
+	# fmtstring: "some text %<*x"
+	#
+	# <: alignment type
+	# *: alignment size
+	# s: actual format
+	#
+	_tiny_pf_eat_and_load
+	jmp	._tiny_pf_loop_parse_get_format
 
 ._tiny_pf_loop_parse_per:
 	_tiny_pf_put_in_buffer $37
@@ -141,20 +180,16 @@ tiny_pf:
 	_tiny_pf_put_in_buffer %dil
 	jmp	._tiny_pf_loop_advance
 
-._tiny_pf_loop_advance:
-	incq	-12(%rbp)
-	incq	-20(%rbp)
-	jmp	._tiny_pf_loop
+
 ._tiny_pf_perform_mid_flush:
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), ._tiny_pf_buffer_capacity(%rip), -4(%rbp)
-	incq	._tiny_pf_mid_flushes(%rip)
+	incq	-40(%rbp)
 	movq	$0, -20(%rbp)
 	jmp	._tiny_pf_loop_eat
 ._tiny_pf_fini:
+	# TODO: mid flushes
 	call	xvargs_fini
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), -20(%rbp), -4(%rbp)
-	# TODO: get _tiny_pf_mid_flushes * 4096 + current bytes written
-	movq	$0, ._tiny_pf_mid_flushes(%rip)
 	movq	-20(%rbp), %rax
 	leave
 	ret
@@ -173,6 +208,8 @@ tiny_pf:
 # esi: base
 #
 # _if no number is found, zero is returned
+
+.globl _tiny_pf_function_parse_number
 _tiny_pf_function_parse_number:
 	pushq	%rbp
 	movq	%rsp, %rbp

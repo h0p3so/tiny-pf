@@ -1,6 +1,6 @@
 .section .rodata
-	.fmt: .string "%<10abcde\n"
-	.test: .string "123a"
+	.fmt: .string "%<zd\n"
+	.test: .string "0123"
 
 .section .text
 .globl _start
@@ -20,6 +20,7 @@ _start:
 	# leaq	-8(%rbp), %rdi
 	# movl	$10, %esi
 	# call	_tiny_pf_function_parse_number
+
 	# movq	$1, %rax
 	# movq	$1, %rdi
 	# movq	-8(%rbp), %rsi
