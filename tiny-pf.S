@@ -71,7 +71,7 @@ tiny_pf:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	movq	%rsp, %rdx
-	subq	$48, %rsp
+	subq	$80, %rsp
 	# stack variables --------------
 	#  -4(%rbp): fd
 	# -12(%rbp): fmt string (ptr)
@@ -79,13 +79,20 @@ tiny_pf:
 	# -24(%rbp): current alignment type
 	# -32(%rbp): current alignment size
 	# -40(%rbp): number of mid flushes
-	#
-	movl	%edi, -4(%rbp)
+	# -48(%rbp): argument's length
+	# -56(%rbp): number of ' 's while aligning
+	# -64(%rbp): last value poped via xvargs
+	# -72(%rbp): is -64(%rbp) a pointer?
+	movl	%edi,  -4(%rbp)
 	movq	%rsi, -12(%rbp)
-	movq	$0, -20(%rbp)
-	movq	$0, -24(%rbp)
-	movq	$0, -32(%rbp)
-	movq	$0, -40(%rbp)
+	movq	  $0, -20(%rbp)
+	movq	  $0, -24(%rbp)
+	movq	  $0, -32(%rbp)
+	movq	  $0, -40(%rbp)
+	movq	  $0, -48(%rbp)
+	movq	  $0, -56(%rbp)
+	movq	  $0, -64(%rbp)
+	movq	  $0, -72(%rbp)
 	#
 	# xvargs initialization
 	#
@@ -168,12 +175,6 @@ tiny_pf:
 	# *: alignment size
 	# s: actual format
 	#
-
-	movq	-32(%rbp), %rdi
-	movq	$60, %rax
-	syscall
-
-
 	_tiny_pf_eat_and_load
 	jmp	._tiny_pf_loop_parse_get_format
 
@@ -182,9 +183,53 @@ tiny_pf:
 	jmp	._tiny_pf_loop_advance
 ._tiny_pf_loop_parse_chr:
 	call	xvargs_next
+	movq	%rax, -64(%rbp)
+	movq	$1, -48(%rbp)
+	movq	$0, -72(%rbp)
+	jmp	._tiny_pf_loop_parse_write_out
+
+._tiny_pf_loop_parse_write_out:
+	movl	-24(%rbp), %eax
+	cmpl	$0, %eax
+	je	._tiny_pf_loop_parse_write_out_write
+	cmpl	$60, %eax
+	je	._tiny_pf_loop_parse_write_out_write
+	#
+	# _if it is right-aligned, get the difference
+	# between the alignment and the argument's length
+	#
+	# Ignore the alignment if the argument's length exceeds
+	# the alignment size
+	#
+	cmpq	-48(%rbp), %rax
+	jae	._tiny_pf_loop_parse_write_out_write
+	subq	-48(%rbp), %rax
+	movq	%rax, -58(%rbp)
+
+._tiny_pf_loop_parse_write_out_write:
+	# TODO: check boundaries
+	xorq	%r8, %r8
+._tiny_pf_loop_parse_write_out_write_loop:
+	cmpq	-48(%rbp), %r8
+	jae	._tiny_pf_loop_parse_write_out_finished
+	movq	-64(%rbp), %rax
+	cmpq	$0, -72(%rbp)
+	jne	._tiny_pf_loop_parse_write_out_write_loop_extract
+	jmp	._tiny_pf_loop_parse_write_out_write_loop_put
+._tiny_pf_loop_parse_write_out_write_loop_extract:
+	movq	-64(%rbp), %rax
+	movzbl	(%rax), %eax
+	jmp	._tiny_pf_loop_parse_write_out_write_loop_put
+._tiny_pf_loop_parse_write_out_write_loop_put:
 	movl	%eax, %edi
 	_tiny_pf_put_in_buffer %dil
+	incq	-20(%rbp)
+	incq	%r8
+	jmp	._tiny_pf_loop_parse_write_out_write_loop
+
+._tiny_pf_loop_parse_write_out_finished:
 	jmp	._tiny_pf_loop_advance
+	# TODO: clean up
 
 
 ._tiny_pf_perform_mid_flush:
