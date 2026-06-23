@@ -1,5 +1,5 @@
 .section .rodata
-	.fmt: .string "score: %c\n"
+	.fmt: .string "s%c\n"
 	.test: .string "0123"
 
 .section .text

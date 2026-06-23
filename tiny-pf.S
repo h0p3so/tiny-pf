@@ -18,10 +18,10 @@
 	._tiny_pf_fatal_inv_alig_len: .quad   38
 	# ----- Errors
 
-	._tiny_pf_buffer_capacity:    .quad 1
+	._tiny_pf_buffer_capacity:    .quad 4096
 
 .section .bss
-	._tiny_pf_buffer: .zero 1
+	._tiny_pf_buffer: .zero 4096
 
 .section .text
 
@@ -63,6 +63,7 @@
 	leaq	._tiny_pf_buffer(%rip), %rax
 	movq	-20(%rbp), %rcx
 	movb	\c, (%rax, %rcx)
+	incq	-20(%rbp)
 .endm
 
 .macro _tiny_pf_perform_mid_flush size, jmp2
@@ -123,7 +124,6 @@ tiny_pf:
 	_tiny_pf_put_in_buffer %dil
 ._tiny_pf_loop_advance:
 	incq	-12(%rbp)
-	incq	-20(%rbp)
 	jmp	._tiny_pf_loop
 ._tiny_pf_loop_parse:
 	# right now we have
@@ -244,7 +244,6 @@ tiny_pf:
 ._tiny_pf_loop_parse_write_out_write_loop_put:
 	movl	%eax, %edi
 	_tiny_pf_put_in_buffer %dil
-	incq	-20(%rbp)
 	incq	%r8
 	jmp	._tiny_pf_loop_parse_write_out_write_loop
 
