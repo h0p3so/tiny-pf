@@ -10,7 +10,7 @@ all: $(FINAL)
 $(FINAL): $(OXVARGS) $(OTEST) $(OTINY)
 	gcc	-g $(OXVARGS) $(OTEST) $(OTINY) -o $(FINAL) -nostartfiles
 $(OXVARGS):
-	gcc	-c xvargs.S -o $(OXVARGS) $(DEBUG_VARS) $(XVARGS_MACROS)
+	gcc	-c libs/xvargs.S -o $(OXVARGS) $(DEBUG_VARS) $(XVARGS_MACROS)
 $(OTEST):
 	gcc	-c test.S -o $(OTEST) $(DEBUG_VARS)
 $(OTINY):
