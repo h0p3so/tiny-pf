@@ -104,8 +104,6 @@
 	._tiny_pf_fatal_inv_alig_len: .quad   38
 	# ----- Errors
 
-	._tiny_pf_buffer_capacity:    .quad 4096 # TODO: remove
-
 .section .bss
 	._tiny_pf_buffer: .zero _TINY_PF_BUFFER_CAPACITY
 
@@ -116,7 +114,17 @@ tiny_pf:
 	movq	%rsp, %rbp
 	movq	%rsp, %rdx
 	subq	$80, %rsp
-
+	# Stack 
+	# _TINY_PF_OFFSET_FD              -4(%rbp):  fd
+	# _TINY_PF_OFFSET_FMT_STR         -12(%rbp): fmt string (ptr)
+	# _TINY_PF_OFFSET_COUNT           -20(%rbp): bytes written into buffer so far
+	# _TINY_PF_OFFSET_ALIGN_TYPE      -24(%rbp): current alignment type
+	# _TINY_PF_OFFSET_ALIGN_SIZE      -32(%rbp): current alignment size
+	# _TINY_PF_OFFSET_NO_MID_FLUSHES  -40(%rbp): bytes written due to mid flushes
+	# _TINY_PF_OFFSET_ARG_LENGTH      -48(%rbp): argument's length
+	# _TINY_PF_OFFSET_PADDING_SIZE    -56(%rbp): number of ' 's while aligning
+	# _TINY_PF_OFFSET_LAST_ARG_XVARGS -64(%rbp): last value poped via xvargs
+	# _TINY_PF_OFFSET_IS_ARG_PTR      -68(%rbp): is -64(%rbp) a pointer?
 	movl	%edi, _TINY_PF_OFFSET_FD(%rbp)
 	movq	%rsi, _TINY_PF_OFFSET_FMT_STR(%rbp)
 	movq	  $0, _TINY_PF_OFFSET_COUNT(%rbp)
@@ -134,9 +142,9 @@ tiny_pf:
 	call	xvargs_init
 ._tiny_pf_loop:
 	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
-	cmpq	._tiny_pf_buffer_capacity(%rip), %rax
+	cmpq	$_TINY_PF_BUFFER_CAPACITY, %rax
 	jb	._tiny_pf_loop_eat
-	_tiny_pf_perform_mid_flush ._tiny_pf_buffer_capacity(%rip), ._tiny_pf_loop_eat
+	_tiny_pf_perform_mid_flush $_TINY_PF_BUFFER_CAPACITY, ._tiny_pf_loop_eat
 ._tiny_pf_loop_eat:
 	movq	_TINY_PF_OFFSET_FMT_STR(%rbp), %rax
 	movzbl	(%rax), %edi
@@ -263,7 +271,7 @@ tiny_pf:
 ._tiny_pf_loop_parse_write_out_write_validate:
 	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
 	addq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
-	cmpq	._tiny_pf_buffer_capacity(%rip), %rax
+	cmpq	$_TINY_PF_BUFFER_CAPACITY, %rax
 	jb	._tiny_pf_loop_parse_write_out_write
 	_tiny_pf_perform_mid_flush _TINY_PF_OFFSET_COUNT(%rbp), ._tiny_pf_loop_parse_write_out_write
 ._tiny_pf_loop_parse_write_out_write:
@@ -309,7 +317,7 @@ tiny_pf:
 	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
 	addq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
 
-	cmpq	._tiny_pf_buffer_capacity(%rip), %rax
+	cmpq	$_TINY_PF_BUFFER_CAPACITY, %rax
 	jb	._tiny_pf_loop_parse_write_out_finished_do_right_alignment
 	_tiny_pf_perform_mid_flush _TINY_PF_OFFSET_COUNT(%rbp), ._tiny_pf_loop_parse_write_out_finished_do_right_alignment
 
