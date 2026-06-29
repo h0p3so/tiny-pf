@@ -16,7 +16,7 @@
 # 
 # 
 
-#define _TINY_PF_BUFFER_CAPACITY        4096
+#define _TINY_PF_BUFFER_CAPACITY        8
 
 #define _TINY_PF_OFFSET_FD              -4
 #define _TINY_PF_OFFSET_FMT_STR         -12
