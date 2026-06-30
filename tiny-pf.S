@@ -1,20 +1,57 @@
-#   __   __                           ___
-#  |  |_|__.-----.--.--.______.-----.'  _|
-#  |   _|  |     |  |  |______|  _  |   _|
-#  |____|__|__|__|___  |      |   __|__|
-#                |_____|      |__|
-# 
-# tiny-pf is an implementation of `dprintf` function form libc
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
+# ---------------------------------------------------------------------------
+# tiny-pf.S -- tiny dprintf implementation for x86_64 Linux
+#
+# SYNOPSIS
+#   A minimal, stand-alone printf-like function for x86_64 assembly programs.
+#   tiny_pf parses a format string left-to-right and writes the result to a
+#   given file descriptor.  It uses the xvargs library to walk variadic
+#   arguments that the caller pushes onto the stack.
+#
+# CALLING CONVENTION
+#   C-like (caller-saved registers, stack-based variadic args)
+#
+# PARAMETERS
+#   %rdi  - file descriptor  (int)
+#   %rsi  - pointer to format string  (const char*)
+#   stack - variadic arguments, pushed RIGHT-TO-LEFT (last first)
+#           Each argument must be 8 bytes.  Arguments are consumed by
+#           format specifiers (%d, %c, %s, %b) in left-to-right order.
+#
+# RETURN VALUE
+#   %rax  - total number of bytes written to fd
+#
+# AVAILABLE FORMAT SPECIFIERS
+#   %%    literal percent sign
+#   %c    character (value from stack, 8-byte)
+#   %s    null-terminated string (pointer from stack)
+#   %d    signed 64-bit integer, base 10
+#   %b    boolean (zero → false, non-zero → true)
+#
+# ALIGNMENT
+#   %<SIZE...   left-align  (pad on the right)
+#   %>SIZE...   right-align (pad on the left)
+#
+#   SIZE is either a literal decimal number (e.g. "%<10s") or the
+#   character '#' to read the alignment width from the variadic stack
+#   at runtime (e.g. "%>#s").
+#
+# ERROR HANDLING
+#   Fatal errors (unknown format, invalid alignment specifier) write a
+#   descriptive message to stderr (fd 2) and call exit(1).
+#
+# INTERNALS
+#   - Uses a 4,096-byte static output buffer (BSS).  When the buffer
+#     reaches capacity a "mid-flush" writes it to fd and resets the
+#     counter, allowing arbitrarily large output.
+#   - Number-to-string conversion (%d) uses a separate 32-byte scratch
+#     buffer in BSS.
+#   - Depends on xvargs (libs/xvargs.S) to read variadic arguments
+#     from the caller's stack frame.
+#
+# PLATFORM
+#   x86_64 Linux.  Uses raw syscalls: write (1), exit (60).
+#
+# ---------------------------------------------------------------------------
 
 #define _TINY_PF_BUFFER_CAPACITY        4096
 #define _TINY_PF_NUM_BUFFER_CAPACITY    32
@@ -305,14 +342,12 @@ tiny_pf:
 	call	xvargs_next
 	cmpq	$0, %rax
 	jne	._tiny_pf_loop_parse_bool_true
-
 	leaq	._tiny_pf_bool_false_fmt_msg(%rip), %rax
 	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
 	movq	._tiny_pf_bool_false_fmt_len(%rip), %rax
 	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
 	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
 	jmp	._tiny_pf_loop_parse_bool_send
-
 ._tiny_pf_loop_parse_bool_true:
 	leaq	._tiny_pf_bool_true_fmt_msg(%rip), %rax
 	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
@@ -321,9 +356,6 @@ tiny_pf:
 	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
 ._tiny_pf_loop_parse_bool_send:
 	jmp	._tiny_pf_loop_parse_write_out
-	
-
-
 #
 # Once the alignment type, alignment size and format type are correctly defined,
 # tiny-pf needs to write the argument given the parameters found
@@ -423,6 +455,7 @@ tiny_pf:
 	jmp	._tiny_pf_loop_advance
 ._tiny_pf_fini:
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), _TINY_PF_OFFSET_COUNT(%rbp), _TINY_PF_OFFSET_FD(%rbp)
+	call	xvargs_fini
 	# returns the current number of bytes plus the number of bytes
 	# written during mid flushes
 	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
@@ -627,5 +660,3 @@ _tiny_pf_function_numstr:
 	incq	%rax
 	leave
 	ret
-
-

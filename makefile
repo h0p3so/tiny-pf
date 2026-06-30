@@ -8,7 +8,7 @@ XVARGS_MACROS =
 all: $(FINAL)
 
 $(FINAL): $(OXVARGS) $(OTEST) $(OTINY)
-	gcc	-g $(OXVARGS) $(OTEST) $(OTINY) -o $(FINAL) -nostartfiles
+	gcc	-g $(OXVARGS) $(OTEST) $(OTINY) -o $(FINAL) -nostartfiles -no-pie
 $(OXVARGS):
 	gcc	-c libs/xvargs.S -o $(OXVARGS) $(DEBUG_VARS) $(XVARGS_MACROS)
 $(OTEST):
