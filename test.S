@@ -1,14 +1,12 @@
 
 .section .rodata
-	.fmt: .string "success:%>3c%>10c\n"
+	.fmt: .string "successabcxyz:%<3c|\n"
 	.test: .string "0123"
 
 .section .text
 .globl _start
 
 _start:
-	pushq	$10
-	pushq	$'B'
 	pushq	$'A'
 
 	movl	$1, %edi

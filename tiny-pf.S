@@ -18,10 +18,10 @@
 	._tiny_pf_fatal_inv_alig_len: .quad   38
 	# ----- Errors
 
-	._tiny_pf_buffer_capacity:    .quad 4096
+	._tiny_pf_buffer_capacity:    .quad 16
 
 .section .bss
-	._tiny_pf_buffer: .zero 4096
+	._tiny_pf_buffer: .zero 16
 
 .section .text
 
@@ -201,13 +201,16 @@ tiny_pf:
 # Once the alignment type, alignment size and format type are correctly defined,
 # tiny-pf needs to write the argument given the parameters found
 #
-._tiny_pf_loop_parse_write_out:
+._tiny_pf_loop_parse_write_out:	
 	#
 	# is there not alignment or is it left-aligned?
 	#
 	movl	-24(%rbp), %eax
 	cmpl	$0, %eax
 	je	._tiny_pf_loop_parse_write_out_write_validate
+
+
+
 	cmpl	$60, %eax
 	je	._tiny_pf_loop_parse_write_out_write_validate
 	#
@@ -260,13 +263,53 @@ tiny_pf:
 	incq	%r8
 	jmp	._tiny_pf_loop_parse_write_out_write_loop
 ._tiny_pf_loop_parse_write_out_finished:
+	#
+	# validating if there's left alignment
+	#
+	movl	-24(%rbp), %eax
+	cmpl	$0, %eax
+	je	._tiny_pf_loop_parse_write_out_finished_clean
+	cmpl	$62, %eax
+	je	._tiny_pf_loop_parse_write_out_finished_clean
+	#
+	# _if arglen >= alignsize: ignore alignment
+	#
+	movq	-48(%rbp), %rax
+	cmpq	-32(%rbp), %rax
+	jae	._tiny_pf_loop_parse_write_out_finished_clean
+
+
+	# getting number of spaces
+	movq	-32(%rbp), %rax				# |
+	subq	-48(%rbp), %rax				# |
+	movq	%rax, -56(%rbp)				# XXX: turn this into a macro
+
+	movq	-20(%rbp), %rax
+	addq	-48(%rbp), %rax
+
+	cmpq	._tiny_pf_buffer_capacity(%rip), %rax
+	jb	._tiny_pf_loop_parse_write_out_finished_do_right_alignment
+	_tiny_pf_perform_mid_flush -20(%rbp), ._tiny_pf_loop_parse_write_out_finished_do_right_alignment
+
+._tiny_pf_loop_parse_write_out_finished_do_right_alignment:
+	leaq	._tiny_pf_buffer(%rip), %rdi
+	addq	-20(%rbp), %rdi
+	movq	-56(%rbp), %rsi
+	movq	$' ', %rdx
+	call	_tiny_pf_function_fill
+	addq	%rax, -20(%rbp)
+
+	jmp	._tiny_pf_loop_parse_write_out_finished_clean
+
+
+
+._tiny_pf_loop_parse_write_out_finished_clean:
 	movl	$0, -24(%rbp)
 	movq	$0, -32(%rbp)
 	movq	$0, -48(%rbp)
 	movq	$0, -56(%rbp)
 	movq	$0, -72(%rbp)
 	jmp	._tiny_pf_loop_advance
-
 ._tiny_pf_fini:
 	_tiny_pf_flush ._tiny_pf_buffer(%rip), -20(%rbp), -4(%rbp)
 	# returns the current number of bytes plus the number of bytes
