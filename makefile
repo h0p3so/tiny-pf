@@ -14,6 +14,6 @@ $(OXVARGS):
 $(OTEST):
 	gcc	-c test.S -o $(OTEST) $(DEBUG_VARS)
 $(OTINY):
-	gcc	-c tiny-pf.S -o $(OTINY) $(DEBUG_VARS)
+	gcc	-c tiny-pf.S -o $(OTINY) $(DEBUG_VARS) -DTINY_PF_LONG_BOOL_FMT
 clean:
 	rm -f $(FINAL) $(OTEST) $(OTINY) $(OXVARGS)
