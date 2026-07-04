@@ -627,9 +627,11 @@ _tiny_pf_function_numstr:
 .__tiny_pf_function_numstr_init_trivial:
 	movq	-28(%rbp), %rax
 	movb	$'0', (%rax)
+	decq	%rax
+	movq	%rax, -28(%rbp)
 	movq	-20(%rbp), %rax
 	movq	$1, (%rax)
-	jmp	.__tiny_pf_function_numstr_fini
+	jmp	.__tiny_pf_function_numstr_fini_ret
 .__tiny_pf_function_numstr_loop:
 	movq	-8(%rbp), %rax
 	movl	-12(%rbp), %ebx
