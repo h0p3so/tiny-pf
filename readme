@@ -1,5 +1,5 @@
 
-	tinypf: tiny dprintf function for x86_64 programs
+	tinypf: not thread-safe, dprintf like library for x86_64
 
 API
 	* TINY_PF_LONG_BOOL_FMT: this macro is used to overwrite the default values of
