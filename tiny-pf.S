@@ -30,6 +30,23 @@
 #define _TINY_PF_OFFSET_IS_ARG_PTR      -68
 
 #
+# _TINY_PF_ASCII_NULL_BYTE        '\0'
+# _TINY_PF_ASCII_FORMATTER        '%'
+# _TINY_PF_ASCII_LEFT_ALIGN       '<'
+# _TINY_PF_ASCII_RIGHT_ALIGN      '>'
+# _TINY_PF_ASCII_CHAR_FMT         'c'
+# _TINY_PF_ASCII_NON_CTE_ALIGN    '#'
+#
+# ~~~
+#
+#define _TINY_PF_ASCII_NULL_BYTE        0
+#define _TINY_PF_ASCII_FORMATTER        37
+#define _TINY_PF_ASCII_LEFT_ALIGN       60
+#define _TINY_PF_ASCII_RIGHT_ALIGN      62
+#define _TINY_PF_ASCII_CHAR_FMT         99
+#define _TINY_PF_ASCII_NON_CTE_ALIGN    35
+
+#
 # Flushes the current content of the buffer
 #
 .macro _tiny_pf_flush buffer, size, fd
@@ -149,9 +166,9 @@ tiny_pf:
 	movq	_TINY_PF_OFFSET_FMT_STR(%rbp), %rax
 	movzbl	(%rax), %edi
 	# special characters -----
-	cmpb	$0, %dil
+	cmpb	$_TINY_PF_ASCII_NULL_BYTE, %dil
 	je	._tiny_pf_fini
-	cmpb	$37, %dil
+	cmpb	$_TINY_PF_ASCII_FORMATTER, %dil
 	je	._tiny_pf_loop_parse
 	# ----- special characters
 	_tiny_pf_put_in_buffer %dil
@@ -167,14 +184,14 @@ tiny_pf:
 	# (*): whatever is x, will define what needs to be parsed
 	_tiny_pf_eat_and_load
 	# finding format -------------------------#
-	cmpb	$37, %dil                         #
+	cmpb	$_TINY_PF_ASCII_FORMATTER, %dil   #
 	je	._tiny_pf_loop_parse_per          #
-	cmpb	$60, %dil                         #
+	cmpb	$_TINY_PF_ASCII_LEFT_ALIGN, %dil  #
 	je	._tiny_pf_loop_parse_alignment    #
-	cmpb	$62, %dil                         #
+	cmpb	$_TINY_PF_ASCII_RIGHT_ALIGN, %dil #
 	je	._tiny_pf_loop_parse_alignment    #
 ._tiny_pf_loop_parse_get_format:                  #
-	cmpb	$99, %dil                         #
+	cmpb	$_TINY_PF_ASCII_CHAR_FMT, %dil    #
 	je	._tiny_pf_loop_parse_chr          #
 	# finding format -------------------------#
 	#
@@ -192,10 +209,11 @@ tiny_pf:
 	# s: actual alignment specifier
 	#
 	_tiny_pf_eat_and_load
-	cmpb	$35, %dil
+	cmpb	$_TINY_PF_ASCII_NON_CTE_ALIGN, %dil
 	jne	._tiny_pf_loop_parse_alignment_parse
 	call	xvargs_next
 	movq	%rax, _TINY_PF_OFFSET_ALIGN_SIZE(%rbp)
+	_tiny_pf_eat_and_load
 	jmp	._tiny_pf_loop_parse_alignment_specifier_is_ok
 ._tiny_pf_loop_parse_alignment_parse:
 	leaq	_TINY_PF_OFFSET_FMT_STR(%rbp), %rdi
@@ -211,11 +229,11 @@ tiny_pf:
 	#
 ._tiny_pf_loop_parse_alignment_specifier_is_ok:
 	# right now we have
-	# fmtstring: "some text %<*x"
+	# fmtstring: "some text %$*x"
 	#
-	# <: alignment type
+	# $: alignment type
 	# *: alignment size
-	# s: actual format
+	# x: actual format
 	#
 	jmp	._tiny_pf_loop_parse_get_format
 ._tiny_pf_loop_parse_per:
