@@ -119,11 +119,11 @@ NOTES
 	* Runtime alignment: When `#` is used as SIZE, tiny-pf pops the value from
 	  the variadic stack via `xvargs_next`, consuming one extra argument per `#`.
 
-	* xvargs_fini: tiny-pf calls `xvargs_init` but not `xvargs_fini`. If the
-	  caller needs to reinitialise xvargs for a subsequent call, it should call
-	  `xvargs_fini` explicitly.
-
 	* Platform: x86_64 Linux only — uses `write` (syscall 1) and `exit`
 	  (syscall 60) directly.
 
 	* xvargs library: https://github.com/h0p3so/xvargs
+
+AUTHOR
+	Juan Diego PM (h0p3so)
+
