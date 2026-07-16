@@ -36,7 +36,7 @@
 # _TINY_PF_ASCII_RIGHT_ALIGN      '>'
 # _TINY_PF_ASCII_CHAR_FMT         'c'
 # _TINY_PF_ASCII_NON_CTE_ALIGN    '#'
-#
+# _TINT_PF_ASCII_PADDING          ' '
 # ~~~
 #
 #define _TINY_PF_ASCII_NULL_BYTE        0
@@ -45,6 +45,12 @@
 #define _TINY_PF_ASCII_RIGHT_ALIGN      62
 #define _TINY_PF_ASCII_CHAR_FMT         99
 #define _TINY_PF_ASCII_NON_CTE_ALIGN    35
+#define _TINY_PF_ASCII_PADDING          32
+
+#define _TINY_PF_BASE_10                10
+#define _TINY_PF_BASE_16                16
+#define _TINY_PF_BASE_8                  8
+#define _TINY_PF_BASE_2                  2
 
 #
 # Flushes the current content of the buffer
@@ -217,7 +223,7 @@ tiny_pf:
 	jmp	._tiny_pf_loop_parse_alignment_specifier_is_ok
 ._tiny_pf_loop_parse_alignment_parse:
 	leaq	_TINY_PF_OFFSET_FMT_STR(%rbp), %rdi
-	movl	$10, %esi
+	movl	$_TINY_PF_BASE_10, %esi
 	call	_tiny_pf_function_parse_number
 	movq	%rax, _TINY_PF_OFFSET_ALIGN_SIZE(%rbp)
 	cmpq	$0, %rax
@@ -237,7 +243,10 @@ tiny_pf:
 	#
 	jmp	._tiny_pf_loop_parse_get_format
 ._tiny_pf_loop_parse_per:
-	_tiny_pf_put_in_buffer $37
+	#
+	# just append '%' into buffer
+	#
+	_tiny_pf_put_in_buffer $_TINY_PF_ASCII_FORMATTER
 	jmp	._tiny_pf_loop_advance
 ._tiny_pf_loop_parse_chr:
 	call	xvargs_next
@@ -256,10 +265,7 @@ tiny_pf:
 	movl	_TINY_PF_OFFSET_ALIGN_TYPE(%rbp), %eax
 	cmpl	$0, %eax
 	je	._tiny_pf_loop_parse_write_out_write_validate
-
-
-
-	cmpl	$60, %eax
+	cmpl	$_TINY_PF_ASCII_LEFT_ALIGN, %eax
 	je	._tiny_pf_loop_parse_write_out_write_validate
 	#
 	# _if arglen >= alignsize: ignore alignment
@@ -272,12 +278,12 @@ tiny_pf:
 	#
 	movq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax				# |
 	subq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax				# |
-	movq	%rax, _TINY_PF_OFFSET_PADDING_SIZE(%rbp)				# XXX: turn this into a macro
+	movq	%rax, _TINY_PF_OFFSET_PADDING_SIZE(%rbp)			# XXX: turn this into a macro
 	#
 	leaq	._tiny_pf_buffer(%rip), %rdi
 	addq	_TINY_PF_OFFSET_COUNT(%rbp), %rdi
 	movq	_TINY_PF_OFFSET_PADDING_SIZE(%rbp), %rsi
-	movq	$' ', %rdx
+	movq	$_TINY_PF_ASCII_PADDING, %rdx
 	call	_tiny_pf_function_fill
 	addq	%rax, _TINY_PF_OFFSET_COUNT(%rbp)
 	#
@@ -317,7 +323,7 @@ tiny_pf:
 	movl	_TINY_PF_OFFSET_ALIGN_TYPE(%rbp), %eax
 	cmpl	$0, %eax
 	je	._tiny_pf_loop_parse_write_out_finished_clean
-	cmpl	$62, %eax
+	cmpl	$_TINY_PF_ASCII_RIGHT_ALIGN, %eax
 	je	._tiny_pf_loop_parse_write_out_finished_clean
 	#
 	# _if arglen >= alignsize: ignore alignment
@@ -330,7 +336,7 @@ tiny_pf:
 	# getting number of spaces
 	movq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax				# |
 	subq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax				# |
-	movq	%rax, _TINY_PF_OFFSET_PADDING_SIZE(%rbp)				# XXX: turn this into a macro
+	movq	%rax, _TINY_PF_OFFSET_PADDING_SIZE(%rbp)			# XXX: turn this into a macro
 
 	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
 	addq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
@@ -343,14 +349,10 @@ tiny_pf:
 	leaq	._tiny_pf_buffer(%rip), %rdi
 	addq	_TINY_PF_OFFSET_COUNT(%rbp), %rdi
 	movq	_TINY_PF_OFFSET_PADDING_SIZE(%rbp), %rsi
-	movq	$' ', %rdx
+	movq	$_TINY_PF_ASCII_PADDING, %rdx
 	call	_tiny_pf_function_fill
 	addq	%rax, _TINY_PF_OFFSET_COUNT(%rbp)
-
 	jmp	._tiny_pf_loop_parse_write_out_finished_clean
-
-
-
 ._tiny_pf_loop_parse_write_out_finished_clean:
 	movl	$0, _TINY_PF_OFFSET_ALIGN_TYPE(%rbp)
 	movq	$0, _TINY_PF_OFFSET_ALIGN_SIZE(%rbp)
