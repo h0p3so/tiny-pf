@@ -1,0 +1,11 @@
+_TINY_PF_OFFSET_FD              -4(%rbp):  fd
+_TINY_PF_OFFSET_FMT_STR         -12(%rbp): fmt string (ptr)
+_TINY_PF_OFFSET_COUNT           -20(%rbp): bytes written into buffer so far
+_TINY_PF_OFFSET_ALIGN_TYPE      -24(%rbp): current alignment type
+_TINY_PF_OFFSET_ALIGN_SIZE      -32(%rbp): current alignment size
+_TINY_PF_OFFSET_NO_MID_FLUSHES  -40(%rbp): bytes written due to mid flushes
+_TINY_PF_OFFSET_ARG_LENGTH      -48(%rbp): argument's length
+_TINY_PF_OFFSET_PADDING_SIZE    -56(%rbp): number of ' 's while aligning
+_TINY_PF_OFFSET_LAST_ARG_XVARGS -64(%rbp): last value poped via xvargs
+_TINY_PF_OFFSET_IS_ARG_PTR      -72(%rbp): is -64(%rbp) a pointer?
+
