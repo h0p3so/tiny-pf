@@ -1,6 +1,6 @@
 
 .section .rodata
-	.fmt: .string "fmt:%<#c|\n"
+	.fmt: .string "%<1c|\n"
 	.test: .string "0123"
 
 .section .text
@@ -8,7 +8,6 @@
 
 _start:
 	pushq	$'A'
-	pushq	$10
 
 	movl	$1, %edi
 	leaq	.fmt(%rip), %rsi

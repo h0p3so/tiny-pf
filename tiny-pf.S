@@ -16,7 +16,7 @@
 # 
 # 
 
-#define _TINY_PF_BUFFER_CAPACITY        4096
+#define _TINY_PF_BUFFER_CAPACITY        5
 
 #define _TINY_PF_OFFSET_FD              -4
 #define _TINY_PF_OFFSET_FMT_STR         -12
@@ -104,8 +104,22 @@
 	jmp	\jmp2
 .endm
 
-.globl tiny_pf
+#
+# _if the argument's size is larger than the alignment size, jump to `jmp2_if_so`
+#
+.macro _tiny_pf_should_skip_alignment jmp2_if_so # TODO: test
+	movq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
+	cmpq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax
+	jae	\jmp2_if_so
+.endm
 
+.macro _tiny_pf_get_padding_size
+	movq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax
+	subq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
+	movq	%rax, _TINY_PF_OFFSET_PADDING_SIZE(%rbp)
+.endm
+
+.globl tiny_pf
 
 .section .rodata
 #ifndef TINY_PF_LONG_BOOL_FMT
@@ -270,15 +284,8 @@ tiny_pf:
 	#
 	# _if arglen >= alignsize: ignore alignment
 	#
-	movq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
-	cmpq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax
-	jae	._tiny_pf_loop_parse_write_out_write_validate
-	#
-	# given arglen < alignsize -> nofill = alignsize - arglen
-	#
-	movq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax				# |
-	subq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax				# |
-	movq	%rax, _TINY_PF_OFFSET_PADDING_SIZE(%rbp)			# XXX: turn this into a macro
+	_tiny_pf_should_skip_alignment ._tiny_pf_loop_parse_write_out_write_validate
+	_tiny_pf_get_padding_size
 	#
 	leaq	._tiny_pf_buffer(%rip), %rdi
 	addq	_TINY_PF_OFFSET_COUNT(%rbp), %rdi
@@ -318,7 +325,7 @@ tiny_pf:
 	jmp	._tiny_pf_loop_parse_write_out_write_loop
 ._tiny_pf_loop_parse_write_out_finished:
 	#
-	# validating if there's left alignment
+	# validating if there's right alignment
 	#
 	movl	_TINY_PF_OFFSET_ALIGN_TYPE(%rbp), %eax
 	cmpl	$0, %eax
@@ -328,23 +335,16 @@ tiny_pf:
 	#
 	# _if arglen >= alignsize: ignore alignment
 	#
-	movq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
-	cmpq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax
-	jae	._tiny_pf_loop_parse_write_out_finished_clean
-
-
-	# getting number of spaces
-	movq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax				# |
-	subq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax				# |
-	movq	%rax, _TINY_PF_OFFSET_PADDING_SIZE(%rbp)			# XXX: turn this into a macro
-
+	_tiny_pf_should_skip_alignment	._tiny_pf_loop_parse_write_out_finished_clean
+	_tiny_pf_get_padding_size
+	#
+	# checking if there's space enough for padding
+	#
 	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
 	addq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
-
 	cmpq	$_TINY_PF_BUFFER_CAPACITY, %rax
 	jb	._tiny_pf_loop_parse_write_out_finished_do_right_alignment
 	_tiny_pf_perform_mid_flush _TINY_PF_OFFSET_COUNT(%rbp), ._tiny_pf_loop_parse_write_out_finished_do_right_alignment
-
 ._tiny_pf_loop_parse_write_out_finished_do_right_alignment:
 	leaq	._tiny_pf_buffer(%rip), %rdi
 	addq	_TINY_PF_OFFSET_COUNT(%rbp), %rdi
