@@ -1,54 +1,13 @@
 
-	tiny-pf: implementation of `fprintf` function from libc for x86_64
-
-DEPENDENCIES
-	This library depends on `xvargs` (github.com/h0p3so/xvargs/) to parse variadic
-	arguments
-
-API
-	* TINY_PF_LONG_BOOL_FMT: if defined, %b will be parsed into 'true' or 'false', 'T' or 'F'
-	will be used otherwise (by default is not defined)
-
-	* tiny_pf(fd, format, ...) -> usize (number of bytes written)
-	          |    `      ~~~ pushed into stack (xvargs)
-            rdi     `- rsi
-
-	- fd: unsigned 32 bit which represents the file descriptor. tiny_pf will output to such fd.
-	- format: string literal which specifies the content to be printed and the formatting
-		%%		prints '%' literal
-		%c		format for a character
-		%s		format for a string
-		%d		format for a signed integer
-		%u		format for a unsigned integer
-		%x		hexadecimal integer formatting
-		%o		octal integer formatting
-		%b		format for boolean (prints TINY_PF_LONG_BOOL_FMT)
-		%>#*		right aligment
-			>: literal '>' is mandatory
-			#: unsigned int representing width
-			*: formatting (c, s, d, u, x, o, b)
-		%<#*		left aligment
-			>: literal '<' is mandatory
-			#: unsigned int representing width
-			*: formatting (c, s, d, u, x, o, b)
-	- extra arguments: values to which formats specified in `format` string will be
-	mapped to. Remember this library heavily depends on xvargs, therefore all these
-	arguments needs to be pushed into the stack in the reverse order they need to be
-	used
-
-EXAMPLE
-
-ERRORS
-
-NOTES
-
-Fast format scanning
-Scan 8 bytes at a time looking for:
-
-
-
-
-what if the buffer is larger than 4kb? what do we return?
-
-
-it overwrites r8 register
+TODO
+	[x] printing simple messsages
+	[x] buffer overflow checking
+	[x] printing literal '%'
+	[x] formatting and parsing %c
+	[x] left alignment
+	[x] right alignment
+	[ ] formatting and parsing %s
+	[ ] formatting and parsing %d
+	[ ] formatting and parsing %b
+	[ ] formatting and parsing %x
+	[x] error handling
