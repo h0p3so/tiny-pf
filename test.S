@@ -1,6 +1,6 @@
 
 .section .rodata
-	.fmt: .string "%s\n"
+	.fmt: .string "|%<13s|\n"
 	.test: .string "hello world!"
 
 .section .text
