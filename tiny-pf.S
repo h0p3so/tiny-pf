@@ -320,6 +320,11 @@ tiny_pf:
 ._tiny_pf_loop_parse_write_out_write:
 	xorq	%r8, %r8
 ._tiny_pf_loop_parse_write_out_write_loop:
+	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
+	cmpq	$_TINY_PF_BUFFER_CAPACITY, %rax
+	jb	._tiny_pf_loop_parse_write_out_write_loop_body
+	_tiny_pf_perform_mid_flush _TINY_PF_OFFSET_COUNT(%rbp), ._tiny_pf_loop_parse_write_out_write_loop_body
+._tiny_pf_loop_parse_write_out_write_loop_body:
 	cmpq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %r8
 	jae	._tiny_pf_loop_parse_write_out_finished
 	movq	_TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp), %rax
