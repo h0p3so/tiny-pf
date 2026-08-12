@@ -11,3 +11,6 @@ TODO
 	[ ] formatting and parsing %b
 	[ ] formatting and parsing %x
 	[x] error handling
+
+NOTES
+	overwrites r8

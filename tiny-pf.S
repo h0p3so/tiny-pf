@@ -16,7 +16,7 @@
 # 
 # 
 
-#define _TINY_PF_BUFFER_CAPACITY        5
+#define _TINY_PF_BUFFER_CAPACITY        8
 
 #define _TINY_PF_OFFSET_FD              -4
 #define _TINY_PF_OFFSET_FMT_STR         -12
@@ -35,6 +35,7 @@
 # _TINY_PF_ASCII_LEFT_ALIGN       '<'
 # _TINY_PF_ASCII_RIGHT_ALIGN      '>'
 # _TINY_PF_ASCII_CHAR_FMT         'c'
+# _TINY_PF_ASCII_STR_FMT          's'
 # _TINY_PF_ASCII_NON_CTE_ALIGN    '#'
 # _TINT_PF_ASCII_PADDING          ' '
 # ~~~
@@ -44,6 +45,7 @@
 #define _TINY_PF_ASCII_LEFT_ALIGN       60
 #define _TINY_PF_ASCII_RIGHT_ALIGN      62
 #define _TINY_PF_ASCII_CHAR_FMT         99
+#define _TINY_PF_ASCII_STR_FMT          115
 #define _TINY_PF_ASCII_NON_CTE_ALIGN    35
 #define _TINY_PF_ASCII_PADDING          32
 
@@ -213,6 +215,8 @@ tiny_pf:
 ._tiny_pf_loop_parse_get_format:                  #
 	cmpb	$_TINY_PF_ASCII_CHAR_FMT, %dil    #
 	je	._tiny_pf_loop_parse_chr          #
+	cmpb	$_TINY_PF_ASCII_STR_FMT, %dil     #
+	je	._tiny_pf_loop_parse_str          #
 	# finding format -------------------------#
 	#
 	# [[no return]]
@@ -268,6 +272,14 @@ tiny_pf:
 	movq	$1, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
 	movl	$0, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
 	jmp	._tiny_pf_loop_parse_write_out
+._tiny_pf_loop_parse_str:
+	call	xvargs_next
+	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
+	movq	%rax, %rdi
+	call	_tiny_pf_function_strlen
+	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
+	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
+	jmp	._tiny_pf_loop_parse_write_out
 #
 # Once the alignment type, alignment size and format type are correctly defined,
 # tiny-pf needs to write the argument given the parameters found
@@ -308,6 +320,11 @@ tiny_pf:
 ._tiny_pf_loop_parse_write_out_write:
 	xorq	%r8, %r8
 ._tiny_pf_loop_parse_write_out_write_loop:
+	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
+	cmpq	$_TINY_PF_BUFFER_CAPACITY, %rax
+	jb	._tiny_pf_loop_parse_write_out_write_loop_body
+	_tiny_pf_perform_mid_flush _TINY_PF_OFFSET_COUNT(%rbp), ._tiny_pf_loop_parse_write_out_write_loop_body
+._tiny_pf_loop_parse_write_out_write_loop_body:
 	cmpq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %r8
 	jae	._tiny_pf_loop_parse_write_out_finished
 	movq	_TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp), %rax
@@ -316,7 +333,7 @@ tiny_pf:
 	jmp	._tiny_pf_loop_parse_write_out_write_loop_put
 ._tiny_pf_loop_parse_write_out_write_loop_extract:
 	movq	_TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp), %rax
-	movzbl	(%rax), %eax
+	movzbl	(%rax, %r8), %eax
 	jmp	._tiny_pf_loop_parse_write_out_write_loop_put
 ._tiny_pf_loop_parse_write_out_write_loop_put:
 	movl	%eax, %edi
@@ -468,6 +485,29 @@ _tiny_pf_function_fill:
 	jmp	.__tiny_pf_function_fill_loop
 .__tiny_pf_function_fill_fini:
 	movq	-32(%rbp), %rax
+	leave
+	ret
+
+# basically strlen: (char*) -> u64
+# rdi: pointer to source
+#
+# number of bytes
+_tiny_pf_function_strlen:
+	pushq	%rbp
+	movq	%rsp, %rbp
+	subq	$16, %rsp
+	movq	%rdi, -8(%rbp)
+	movq	$0, -16(%rbp)
+	jmp	.__tiny_pf_function_condition
+.__tiny_pf_function_strlen_loop:
+	addq	$1, -8(%rbp)
+	addq	$1, -16(%rbp)
+.__tiny_pf_function_condition:
+	movq	-8(%rbp), %rax
+	movzbl	(%rax), %eax
+	testb	%al, %al
+	jne	.__tiny_pf_function_strlen_loop
+	movq	-16(%rbp), %rax
 	leave
 	ret
 

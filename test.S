@@ -1,37 +1,23 @@
 
 .section .rodata
-	.fmt: .string "%<1c|\n"
-	.test: .string "0123"
+	.fmt: .string "|%<5s%>10s|\n"
+	.test0: .string "hello"
+	.test1: .string "world!"
 
 .section .text
 .globl _start
 
 _start:
-	pushq	$'A'
+	leaq	.test1(%rip), %rax
+	pushq	%rax
+
+	leaq	.test0(%rip), %rax
+	pushq	%rax
 
 	movl	$1, %edi
 	leaq	.fmt(%rip), %rsi
 	call	tiny_pf
 
-	# pushq	%rbp
-	# movq	%rsp, %rbp
-	# subq	$8, %rsp
-	# leaq	.test(%rip), %rdi
-	# movq	%rdi, -8(%rbp)
-	# leaq	-8(%rbp), %rdi
-	# movl	$10, %esi
-	# call	_tiny_pf_function_parse_number
-
-	# movq	$1, %rax
-	# movq	$1, %rdi
-	# movq	-8(%rbp), %rsi
-	# movq	$1, %rdx
-	# syscall
-
-
 	movq	%rax, %rdi
 	movq	$60, %rax
 	syscall
-
-
-# buff addr: 0x555555558010      93824992247824
