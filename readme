@@ -11,6 +11,8 @@ TODO
 	[ ] formatting and parsing %b
 	[ ] formatting and parsing %x
 	[x] error handling
+	[ ] performance test
+	[ ] heavy test
 
 NOTES
 	overwrites r8
