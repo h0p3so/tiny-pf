@@ -38,6 +38,7 @@
 # _TINY_PF_ASCII_CHAR_FMT         'c'
 # _TINY_PF_ASCII_STR_FMT          's'
 # _TINY_PF_ASCII_INT_FMT          'd'
+# _TINY_PF_ASCII_BOOL_FMT         'b'
 # _TINY_PF_ASCII_NON_CTE_ALIGN    '#'
 # _TINT_PF_ASCII_PADDING          ' '
 # ~~~
@@ -51,6 +52,7 @@
 #define _TINY_PF_ASCII_INT_FMT          100
 #define _TINY_PF_ASCII_NON_CTE_ALIGN    35
 #define _TINY_PF_ASCII_PADDING          32
+#define _TINY_PF_ASCII_BOOL_FMT         98
 
 #define _TINY_PF_BASE_10                10
 #define _TINY_PF_BASE_16                16
@@ -127,7 +129,7 @@
 .globl tiny_pf
 
 .section .rodata
-#ifndef TINY_PF_LONG_BOOL_FMT
+#ifdef TINY_PF_LONG_BOOL_FMT
 	._tiny_pf_bool_true_fmt_msg:  .string "true"
 	._tiny_pf_bool_true_fmt_len:  .quad    4
 	._tiny_pf_bool_false_fmt_msg: .string "false"
@@ -223,6 +225,8 @@ tiny_pf:
 	je	._tiny_pf_loop_parse_str          #
 	cmpb	$_TINY_PF_ASCII_INT_FMT, %dil     #
 	je	._tiny_pf_loop_parse_int          #
+	cmpb	$_TINY_PF_ASCII_BOOL_FMT, %dil    #
+	je	._tiny_pf_loop_parse_bool         #
 	# finding format -------------------------#
 	#
 	# [[no return]]
@@ -297,8 +301,27 @@ tiny_pf:
 	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
 	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
 	jmp	._tiny_pf_loop_parse_write_out
+._tiny_pf_loop_parse_bool:
+	call	xvargs_next
+	cmpq	$0, %rax
+	jne	._tiny_pf_loop_parse_bool_true
 
+	leaq	._tiny_pf_bool_false_fmt_msg(%rip), %rax
+	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
+	movq	._tiny_pf_bool_false_fmt_len(%rip), %rax
+	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
+	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
+	jmp	._tiny_pf_loop_parse_bool_send
 
+._tiny_pf_loop_parse_bool_true:
+	leaq	._tiny_pf_bool_true_fmt_msg(%rip), %rax
+	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
+	movq	._tiny_pf_bool_true_fmt_len(%rip), %rax
+	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
+	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
+._tiny_pf_loop_parse_bool_send:
+	jmp	._tiny_pf_loop_parse_write_out
+	
 
 
 #

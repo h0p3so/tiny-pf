@@ -1,6 +1,6 @@
 
 .section .rodata
-	.fmt: .string "|%>10d|\n"
+	.fmt: .string "|%b|\n"
 
 	.test0: .string "hello"
 	.test1: .string "world!"
@@ -9,7 +9,7 @@
 .globl _start
 
 _start:
-	pushq	$-10
+	pushq	$10
 
 	movl	$1, %edi
 	leaq	.fmt(%rip), %rsi
