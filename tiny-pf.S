@@ -16,7 +16,8 @@
 # 
 # 
 
-#define _TINY_PF_BUFFER_CAPACITY        5
+#define _TINY_PF_BUFFER_CAPACITY        4096
+#define _TINY_PF_NUM_BUFFER_CAPACITY    32
 
 #define _TINY_PF_OFFSET_FD              -4
 #define _TINY_PF_OFFSET_FMT_STR         -12
@@ -35,6 +36,9 @@
 # _TINY_PF_ASCII_LEFT_ALIGN       '<'
 # _TINY_PF_ASCII_RIGHT_ALIGN      '>'
 # _TINY_PF_ASCII_CHAR_FMT         'c'
+# _TINY_PF_ASCII_STR_FMT          's'
+# _TINY_PF_ASCII_INT_FMT          'd'
+# _TINY_PF_ASCII_BOOL_FMT         'b'
 # _TINY_PF_ASCII_NON_CTE_ALIGN    '#'
 # _TINT_PF_ASCII_PADDING          ' '
 # ~~~
@@ -44,8 +48,11 @@
 #define _TINY_PF_ASCII_LEFT_ALIGN       60
 #define _TINY_PF_ASCII_RIGHT_ALIGN      62
 #define _TINY_PF_ASCII_CHAR_FMT         99
+#define _TINY_PF_ASCII_STR_FMT          115
+#define _TINY_PF_ASCII_INT_FMT          100
 #define _TINY_PF_ASCII_NON_CTE_ALIGN    35
 #define _TINY_PF_ASCII_PADDING          32
+#define _TINY_PF_ASCII_BOOL_FMT         98
 
 #define _TINY_PF_BASE_10                10
 #define _TINY_PF_BASE_16                16
@@ -107,7 +114,7 @@
 #
 # _if the argument's size is larger than the alignment size, jump to `jmp2_if_so`
 #
-.macro _tiny_pf_should_skip_alignment jmp2_if_so # TODO: test
+.macro _tiny_pf_should_skip_alignment jmp2_if_so
 	movq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %rax
 	cmpq	_TINY_PF_OFFSET_ALIGN_SIZE(%rbp), %rax
 	jae	\jmp2_if_so
@@ -122,7 +129,7 @@
 .globl tiny_pf
 
 .section .rodata
-#ifndef TINY_PF_LONG_BOOL_FMT
+#ifdef TINY_PF_LONG_BOOL_FMT
 	._tiny_pf_bool_true_fmt_msg:  .string "true"
 	._tiny_pf_bool_true_fmt_len:  .quad    4
 	._tiny_pf_bool_false_fmt_msg: .string "false"
@@ -142,7 +149,8 @@
 	# ----- Errors
 
 .section .bss
-	._tiny_pf_buffer: .zero _TINY_PF_BUFFER_CAPACITY
+	._tiny_pf_buffer:     .zero _TINY_PF_BUFFER_CAPACITY
+	._tiny_pf_num_buffer: .zero _TINY_PF_NUM_BUFFER_CAPACITY
 
 .section .text
 
@@ -213,6 +221,12 @@ tiny_pf:
 ._tiny_pf_loop_parse_get_format:                  #
 	cmpb	$_TINY_PF_ASCII_CHAR_FMT, %dil    #
 	je	._tiny_pf_loop_parse_chr          #
+	cmpb	$_TINY_PF_ASCII_STR_FMT, %dil     #
+	je	._tiny_pf_loop_parse_str          #
+	cmpb	$_TINY_PF_ASCII_INT_FMT, %dil     #
+	je	._tiny_pf_loop_parse_int          #
+	cmpb	$_TINY_PF_ASCII_BOOL_FMT, %dil    #
+	je	._tiny_pf_loop_parse_bool         #
 	# finding format -------------------------#
 	#
 	# [[no return]]
@@ -268,6 +282,48 @@ tiny_pf:
 	movq	$1, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
 	movl	$0, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
 	jmp	._tiny_pf_loop_parse_write_out
+._tiny_pf_loop_parse_str:
+	call	xvargs_next
+	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
+	movq	%rax, %rdi
+	call	_tiny_pf_function_strlen
+	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
+	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
+	jmp	._tiny_pf_loop_parse_write_out
+._tiny_pf_loop_parse_int:
+	call	xvargs_next
+	movq	%rax, %rdi
+	movq	$_TINY_PF_BASE_10, %rsi
+	leaq	-48(%rbp), %rdx
+	call	_tiny_pf_function_numstr
+	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
+	movq	-48(%rbp), %rax
+	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
+	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
+	jmp	._tiny_pf_loop_parse_write_out
+._tiny_pf_loop_parse_bool:
+	call	xvargs_next
+	cmpq	$0, %rax
+	jne	._tiny_pf_loop_parse_bool_true
+
+	leaq	._tiny_pf_bool_false_fmt_msg(%rip), %rax
+	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
+	movq	._tiny_pf_bool_false_fmt_len(%rip), %rax
+	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
+	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
+	jmp	._tiny_pf_loop_parse_bool_send
+
+._tiny_pf_loop_parse_bool_true:
+	leaq	._tiny_pf_bool_true_fmt_msg(%rip), %rax
+	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
+	movq	._tiny_pf_bool_true_fmt_len(%rip), %rax
+	movq	%rax, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
+	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
+._tiny_pf_loop_parse_bool_send:
+	jmp	._tiny_pf_loop_parse_write_out
+	
+
+
 #
 # Once the alignment type, alignment size and format type are correctly defined,
 # tiny-pf needs to write the argument given the parameters found
@@ -308,6 +364,11 @@ tiny_pf:
 ._tiny_pf_loop_parse_write_out_write:
 	xorq	%r8, %r8
 ._tiny_pf_loop_parse_write_out_write_loop:
+	movq	_TINY_PF_OFFSET_COUNT(%rbp), %rax
+	cmpq	$_TINY_PF_BUFFER_CAPACITY, %rax
+	jb	._tiny_pf_loop_parse_write_out_write_loop_body
+	_tiny_pf_perform_mid_flush _TINY_PF_OFFSET_COUNT(%rbp), ._tiny_pf_loop_parse_write_out_write_loop_body
+._tiny_pf_loop_parse_write_out_write_loop_body:
 	cmpq	_TINY_PF_OFFSET_ARG_LENGTH(%rbp), %r8
 	jae	._tiny_pf_loop_parse_write_out_finished
 	movq	_TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp), %rax
@@ -316,7 +377,7 @@ tiny_pf:
 	jmp	._tiny_pf_loop_parse_write_out_write_loop_put
 ._tiny_pf_loop_parse_write_out_write_loop_extract:
 	movq	_TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp), %rax
-	movzbl	(%rax), %eax
+	movzbl	(%rax, %r8), %eax
 	jmp	._tiny_pf_loop_parse_write_out_write_loop_put
 ._tiny_pf_loop_parse_write_out_write_loop_put:
 	movl	%eax, %edi
@@ -471,5 +532,100 @@ _tiny_pf_function_fill:
 	leave
 	ret
 
+# basically strlen: (char*) -> u64
+# rdi: pointer to source
+#
+# number of bytes
+_tiny_pf_function_strlen:
+	pushq	%rbp
+	movq	%rsp, %rbp
+	subq	$16, %rsp
+	movq	%rdi, -8(%rbp)
+	movq	$0, -16(%rbp)
+	jmp	.__tiny_pf_function_strlen_condition
+.__tiny_pf_function_strlen_loop:
+	addq	$1, -8(%rbp)
+	addq	$1, -16(%rbp)
+.__tiny_pf_function_strlen_condition:
+	movq	-8(%rbp), %rax
+	movzbl	(%rax), %eax
+	testb	%al, %al
+	jne	.__tiny_pf_function_strlen_loop
+	movq	-16(%rbp), %rax
+	leave
+	ret
+
+# rdi: number
+# rsi: base
+# rdx: argument's length pointer
+_tiny_pf_function_numstr:
+	pushq	%rbp
+	movq	%rsp, %rbp
+	subq	$32, %rsp
+	# stack variables --------------
+	#  -8: number
+	# -12: base 
+	# -20: pointer to argument's length
+	# -28: pointer to buffer
+	# -30: is number negative?
+	movq	%rdi, -8(%rbp)
+	movl	%esi, -12(%rbp)
+	movq	%rdx, -20(%rbp)
+	movw	$0, -30(%rbp)
+	#
+	leaq	._tiny_pf_num_buffer(%rip), %rax
+	addq	$_TINY_PF_NUM_BUFFER_CAPACITY, %rax
+	decq	%rax
+	movq	%rax, -28(%rbp)
+	#
+	movq	-20(%rbp), %rax
+	movq	$0, (%rax)
+.__tiny_pf_function_numstr_init:
+	movq	-8(%rbp), %rax
+	cmpq	$0, %rax
+	je	.__tiny_pf_function_numstr_init_trivial
+	jg	.__tiny_pf_function_numstr_loop
+	movq	-8(%rbp), %rax
+	movq	$-1, %rbx
+	imulq	%rbx
+	movq	%rax, -8(%rbp)
+	movw	$1, -30(%rbp)
+	jmp	.__tiny_pf_function_numstr_loop
+.__tiny_pf_function_numstr_init_trivial:
+	movq	-28(%rbp), %rax
+	movb	$'0', (%rax)
+	movq	-20(%rbp), %rax
+	movq	$1, (%rax)
+	jmp	.__tiny_pf_function_numstr_fini
+.__tiny_pf_function_numstr_loop:
+	movq	-8(%rbp), %rax
+	movl	-12(%rbp), %ebx
+	xorq	%rdx, %rdx
+	divq	%rbx
+	movq	%rax, -8(%rbp)
+	addq	$48, %rdx
+	movq	-28(%rbp), %rax
+	movb	%dl, (%rax)
+	decq	%rax
+	movq	%rax, -28(%rbp)
+	movq	-20(%rbp), %rax
+	incq	(%rax)
+	cmpq	$0, -8(%rbp)
+	je	.__tiny_pf_function_numstr_fini
+	jmp	.__tiny_pf_function_numstr_loop
+.__tiny_pf_function_numstr_fini:
+	cmpw	$1, -30(%rbp)
+	jne	.__tiny_pf_function_numstr_fini_ret
+	movq	-28(%rbp), %rax
+	movb	$'-', (%rax)
+	decq	%rax
+	movq	%rax, -28(%rbp)
+	movq	-20(%rbp), %rax
+	incq	(%rax)
+.__tiny_pf_function_numstr_fini_ret:
+	movq	-28(%rbp), %rax
+	incq	%rax
+	leave
+	ret
 
 
