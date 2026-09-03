@@ -28,7 +28,7 @@ _start:
 	call	tiny_pf
 
 	# 2) integer
-	pushq	$42
+	pushq	$0
 	movl	$1, %edi
 	leaq	.fmt_int(%rip), %rsi
 	call	tiny_pf
