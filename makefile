@@ -5,6 +5,8 @@ FINAL = tiny-pf
 DEBUG_VARS = -g -O0 -fno-omit-frame-pointer
 XVARGS_MACROS =
 
+.PHONY: all
+
 all: $(FINAL)
 
 $(FINAL): $(OXVARGS) $(OTEST) $(OTINY)

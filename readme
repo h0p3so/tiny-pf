@@ -1,129 +1,33 @@
 
-	tinypf: not thread-safe, dprintf like library for x86_64
+	tiny-pf: tiny printf function for x86_64
 
-API
-	* TINY_PF_LONG_BOOL_FMT: this macro is used to overwrite the default values of
-	boolean values, by default they are 'T' for true and 'F' for false. If the macro
-	is defined, the values will become 'true' for true and 'false' for false.
+about:
+	this is a small implementation of printf function from libc but for x86_64 so i
+	do not have to use any other library for my x86_64 projects :). It is pretty
+	simple to use:
 
-	* tiny_pf: actual function which performs the lexing, parsing, writing and return of
-	the total number of bytes writen. Its main arguments are
-	- rdi: fd
-	- rsi: format string
+	1. provide fd via rdi
+	2. provide format string via rsi
+	3. provide arguments via stack (reverse order)
 
-SET UP
-	This function depends on `xvargs` library (see NOTES) to handle variadic arguments, therefore
-	once rdi and rsi were set up correctly, all of the other arguments shall be pushed into the stack
-	in the order xvargs specifies.
+features:
+	formats:
+		%d for integers
+		%c for characters
+		%s for null terminated strings
+		%b for boolean
+		%% literal %
+	alignment:
+		%<sizeFORMAT  left-align
+		%>sizeFORMAT right-align
 
-	Since arguments are pushed onto the stack before the call, the stack pointer is left
-	shifted after tiny_pf returns. The caller must restore %rsp by adding 8 bytes for
-	each pushed argument, or by popping into scratch registers.
+		size can be a literal like %<10d (left 10 padding integer) or
+		a variable padding given via argument on the stack %<#d
 
-	                           # stack (low-to-high):
-	pushq    $'A'              # | 'A' | <- maps to %c
-	pushq    $10               # |  10 | <- maps to %d
-	movl     $1, %edi          # fd = stdout
-	leaq     .fmt(%rip), %rsi  # fmtstring
-	call     tiny_pf
-	addq     $16, %rsp         # restore stack: 2 args x 8 bytes
-
-	Failure to clean up the stack will leave %rsp misaligned and may crash
-	the program on subsequent calls or on exit.
-
-	For a complete example
-
-	.section .rodata
-		.fmt: .string "|int: %d char: %c|\n"
-
-	.section .text
-	.globl _start
-	_start:
-		pushq   $'A'    # maps to %c
-		pushq   $10     # maps to %d
-		movl    $1, %edi
-		leaq    .fmt(%rip), %rsi
-		call    tiny_pf
-		addq    $16, %rsp  # clean up the two pushed arguments
-
-		movq    $60, %rax  # exit
-		xorq    %rdi, %rdi
-		syscall
-
-USAGE
-	The function parses the format string left to right. Regular characters are
-	written directly to the output buffer. A `%` character introduces a format
-	specifier.
-
-	%FORMAT
-
-	  %c        character (value from stack)
-	  %s        null-terminated string (pointer from stack)
-	  %d        signed 64-bit integer, base 10
-	  %b        boolean (zero = false, non-zero = true)
-	  %%        literal `%`
-
-	ALIGNMENT
-
-	  %<SIZE...  left-align (pad on the right)
-	  %>SIZE...  right-align (pad on the left)
-
-	SIZE is either a literal decimal number (e.g. `%<10d`) or `#` to read the
-	alignment size from the variadic stack at runtime (e.g. `%>#s`).
-
-	When `%` is followed by `<` or `>`, the parser reads SIZE, then expects a
-	second format character from the FORMAT list above. An unrecognised format
-	character (after `%` or after an alignment specifier) triggers a fatal error.
-
-ERRORS
-	tiny-pf has two fatal error conditions. In both cases the message is written
-	to stderr (fd 2) and the process exits with code 1.
-
-	  * "tiny-pf: unknown format!\n"
-	    Raised when `%` is followed by a character that is not one of
-	    `c`, `s`, `d`, `b`, `%`, `<` or `>`.
-
-	  * "tiny-pf: invalid alignment specifier!\n"
-	    Raised when `<` or `>` is followed by a character that is neither
-	    a decimal digit [0-9] nor `#`.
-
-TODO
-	[x] printing simple messsages
-	[x] buffer overflow checking
-	[x] printing literal '%'
-	[x] formatting and parsing %c
-	[x] left alignment
-	[x] right alignment
-	[x] formatting and parsing %s
-	[x] formatting and parsing %d
-	[x] formatting and parsing %b
-	[ ] formatting and parsing %x
-	[x] error handling
-
-NOTES
-	* Buffer: tiny-pf uses a 4,096-byte static output buffer. If accumulated
-	  output exceeds this capacity, a mid-flush writes the buffer to `fd` and
-	  resets the counter transparently, allowing arbitrarily large output.
-
-	* Number conversion: `%d` uses a 32-byte scratch buffer for integer-to-
-	  string conversion, limiting the maximum number of representable digits.
-
-	* Boolean format: The `TINY_PF_LONG_BOOL_FMT` macro controls boolean output.
-	  When undefined: `%b` prints "T" for true and "F" for false. When defined:
-	  "true" and "false". The provided makefile defines this macro by default.
-
-	* Stack arguments: tiny-pf uses `xvargs` (see SET UP) to walk variadic
-	  arguments on the stack. Arguments must be pushed in reverse order
-	  (rightmost first), as shown in the example.
-
-	* Runtime alignment: When `#` is used as SIZE, tiny-pf pops the value from
-	  the variadic stack via `xvargs_next`, consuming one extra argument per `#`.
-
-	* Platform: x86_64 Linux only — uses `write` (syscall 1) and `exit`
-	  (syscall 60) directly.
-
-	* xvargs library: https://github.com/h0p3so/xvargs
-
-AUTHOR
-	Juan Diego PM (h0p3so)
-
+notes:
+	- no thread safe
+	- 4096 b buffer (do not worry about overflow tho)
+	- depends on xvargs library
+	- the caller is responsable for adding $N to rsp after calling
+	- if TINY_PF_LONG_BOOL_FMT macro is defined, then the boolean
+	  values will be 'true' and 'false', 'T' or 'F' will be used otherwise
