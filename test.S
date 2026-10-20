@@ -1,23 +1,24 @@
 .section .rodata
-	.fmt_simple:       .string " 1) Hello, World!\n"
-	.fmt_int:          .string " 2) int: %d\n"
-	.fmt_char:         .string " 3) char: %c\n"
-	.fmt_str:          .string " 4) str: %s\n"
-	.fmt_bool:         .string " 5) true: %b  false: %b\n"
-	.fmt_align_l:      .string " 6) |%<10s|\n"
-	.fmt_align_r:      .string " 7) |%>10s|\n"
-	.fmt_multi:        .string " 8) %s is %d years old and likes '%c'\n"
-	.fmt_rt_l:         .string " 9) |%<#s|\n"
-	.fmt_rt_r:         .string "10) |%>#s|\n"
-	.fmt_align_int_l:  .string "11) |%<5d|\n"
-	.fmt_align_int_r:  .string "12) |%>5d|\n"
-	.fmt_pct:          .string "13) 100%%\n"
-	.fmt_negative:     .string "14) negative: %d\n"
+	.fmt_simple:        .string " 1) Hello, World!\n"
+	.fmt_int:           .string " 2) int: %d\n"
+	.fmt_char:          .string " 3) char: %c\n"
+	.fmt_str:           .string " 4) str: %s\n"
+	.fmt_bool:          .string " 5) true: %b  false: %b\n"
+	.fmt_align_l:       .string " 6) |%<10s|\n"
+	.fmt_align_r:       .string " 7) |%>10s|\n"
+	.fmt_multi:         .string " 8) %s is %d years old and likes '%c'\n"
+	.fmt_rt_l:          .string " 9) |%<#s|\n"
+	.fmt_rt_r:          .string "10) |%>#s|\n"
+	.fmt_align_int_l:   .string "11) |%<5d|\n"
+	.fmt_align_int_r:   .string "12) |%>5d|\n"
+	.fmt_pct:           .string "13) 100%%\n"
+	.fmt_negative:      .string "14) negative: %d\n"
+	.fmt_hexa_decimal:  .string "15) hexa-decimal %x\n"
 	
-	.str_hello:        .string "hello"
-	.str_world:        .string "world"
-	.str_alice:        .string "Alice"
-	.str_right:        .string "right"
+	.str_hello:         .string "hello"
+	.str_world:         .string "world"
+	.str_alice:         .string "Alice"
+	.str_right:         .string "right"
 
 .section .text
 .globl _start
@@ -128,6 +129,14 @@ _start:
 	call	tiny_pf
 	addq	$8, %rsp
 
+	# 15) hexa-decimal
+	pushq $0x9F3
+	movl  $1, %edi
+	leaq  .fmt_hexa_decimal(%rip), %rsi
+	call  tiny_pf
+	addq  $8, %rsp
+
+	# 1) plain string (no variadic args)
 	# exit(0)
 	movq	$60, %rax
 	xorq	%rdi, %rdi

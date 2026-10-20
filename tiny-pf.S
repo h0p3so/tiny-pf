@@ -1,5 +1,6 @@
 #define _TINY_PF_BUFFER_CAPACITY        4096
 #define _TINY_PF_NUM_BUFFER_CAPACITY    32
+#define _TINY_PF_HEX_BUFFER_CAPACITY    20
 
 #define _TINY_PF_OFFSET_FD              -4
 #define _TINY_PF_OFFSET_FMT_STR         -12
@@ -23,6 +24,7 @@
 # _TINY_PF_ASCII_BOOL_FMT         'b'
 # _TINY_PF_ASCII_NON_CTE_ALIGN    '#'
 # _TINT_PF_ASCII_PADDING          ' '
+# _TINY_PF_ASCII_HEXDEC_FMT       'x'
 # ~~~
 #
 #define _TINY_PF_ASCII_NULL_BYTE        0
@@ -35,6 +37,7 @@
 #define _TINY_PF_ASCII_NON_CTE_ALIGN    35
 #define _TINY_PF_ASCII_PADDING          32
 #define _TINY_PF_ASCII_BOOL_FMT         98
+#define _TINY_PF_ASCII_HEXDEC_FMT 		  120
 
 #define _TINY_PF_BASE_10                10
 #define _TINY_PF_BASE_16                16
@@ -133,6 +136,7 @@
 .section .bss
 	._tiny_pf_buffer:     .zero _TINY_PF_BUFFER_CAPACITY
 	._tiny_pf_num_buffer: .zero _TINY_PF_NUM_BUFFER_CAPACITY
+	._tiny_pf_hex_buffer: .zero _TINY_PF_HEX_BUFFER_CAPACITY
 
 .section .text
 
@@ -194,21 +198,23 @@ tiny_pf:
 	# (*): whatever is x, will define what needs to be parsed
 	_tiny_pf_eat_and_load
 	# finding format -------------------------#
-	cmpb	$_TINY_PF_ASCII_FORMATTER, %dil   #
-	je	._tiny_pf_loop_parse_per          #
-	cmpb	$_TINY_PF_ASCII_LEFT_ALIGN, %dil  #
-	je	._tiny_pf_loop_parse_alignment    #
-	cmpb	$_TINY_PF_ASCII_RIGHT_ALIGN, %dil #
-	je	._tiny_pf_loop_parse_alignment    #
-._tiny_pf_loop_parse_get_format:                  #
-	cmpb	$_TINY_PF_ASCII_CHAR_FMT, %dil    #
-	je	._tiny_pf_loop_parse_chr          #
-	cmpb	$_TINY_PF_ASCII_STR_FMT, %dil     #
-	je	._tiny_pf_loop_parse_str          #
-	cmpb	$_TINY_PF_ASCII_INT_FMT, %dil     #
-	je	._tiny_pf_loop_parse_int          #
-	cmpb	$_TINY_PF_ASCII_BOOL_FMT, %dil    #
-	je	._tiny_pf_loop_parse_bool         #
+	cmpb	$_TINY_PF_ASCII_FORMATTER, %dil    #
+	je	._tiny_pf_loop_parse_per             #
+	cmpb	$_TINY_PF_ASCII_LEFT_ALIGN, %dil   #
+	je	._tiny_pf_loop_parse_alignment       #
+	cmpb	$_TINY_PF_ASCII_RIGHT_ALIGN, %dil  #
+	je	._tiny_pf_loop_parse_alignment       #
+._tiny_pf_loop_parse_get_format:           #
+	cmpb	$_TINY_PF_ASCII_CHAR_FMT, %dil     #
+	je	._tiny_pf_loop_parse_chr             #
+	cmpb	$_TINY_PF_ASCII_STR_FMT, %dil      #
+	je	._tiny_pf_loop_parse_str             #
+	cmpb	$_TINY_PF_ASCII_INT_FMT, %dil      #
+	je	._tiny_pf_loop_parse_int             #
+	cmpb	$_TINY_PF_ASCII_BOOL_FMT, %dil     #
+	je	._tiny_pf_loop_parse_bool            #
+	cmpb	$_TINY_PF_ASCII_HEXDEC_FMT, %dil	 #
+	je	._tiny_pf_loop_parse_hexdec					 #
 	# finding format -------------------------#
 	#
 	# [[no return]]
@@ -301,6 +307,17 @@ tiny_pf:
 	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
 ._tiny_pf_loop_parse_bool_send:
 	jmp	._tiny_pf_loop_parse_write_out
+._tiny_pf_loop_parse_hexdec:
+	call	xvargs_next
+	movq	%rax, %rdi
+	leaq	-48(%rbp), %rdx
+	call	_tiny_pf_function_numhex
+	movq	%rax, _TINY_PF_OFFSET_LAST_ARG_XVARGS(%rbp)
+	movq	%rbx, _TINY_PF_OFFSET_ARG_LENGTH(%rbp)
+	movl	$1, _TINY_PF_OFFSET_IS_ARG_PTR(%rbp)
+	jmp	._tiny_pf_loop_parse_write_out
+	# parse the hexa decimal number
+	
 #
 # Once the alignment type, alignment size and format type are correctly defined,
 # tiny-pf needs to write the argument given the parameters found
@@ -606,4 +623,63 @@ _tiny_pf_function_numstr:
 	movq	-28(%rbp), %rax
 	incq	%rax
 	leave
+	ret
+
+# param: $rax (int) number we are converting to hex
+# returns: $rax (char*) pointer to the converted hex-str
+# returns: $rbx (int) length of the string
+_tiny_pf_function_numhex:
+	leaq	._tiny_pf_hex_buffer, %rsi
+	cmpq	$0, %rax
+	jle	.tiny_pf_function_numhex_iszero
+	movq	%rax, %r8
+	movq	$15, %r9
+	# maybe push the char* pointer ahead for appending
+.tiny_pf_function_numhex_loop:
+	# x = (hex_number >> (4 * on_index)) & 0xF
+	movq	%r8, %rax
+	movq	%r9, %rcx
+	shlq	$2, %rcx
+	shrq	%cl, %rax
+	andq	$0xF, %rax
+	# check al validity
+	cmpb	$10, %al
+	jae	.tiny_pf_function_numhex_10above
+	# make under 10
+	addb	$'0', %al
+	jmp	.tiny_pf_function_numhex_loopcheck
+.tiny_pf_function_numhex_10above:
+	# make above 10
+	addb	$'7', %al	
+	# continues into .tiny_pf_function_numhex_loopcheck
+.tiny_pf_function_numhex_loopcheck:
+	movb	%al, (%rsi)
+	decq	%r9
+	incq	%rsi
+	cmpq	$0, %r9
+	jnl	.tiny_pf_function_numhex_loop
+	leaq	._tiny_pf_hex_buffer, %rax
+.tiny_pf_function_numhex_setptr_offset:
+	movb	(%rax), %bl
+	cmpb	$'0', %bl
+	jne	.tiny_pf_function_numhex_setprt_set
+	incq	%rax	
+	jmp	.tiny_pf_function_numhex_setptr_offset
+.tiny_pf_function_numhex_setprt_set:
+	xorq	%rbx, %rbx
+	movq	%rax, %rdx
+	.tiny_pf_function_numhex_gethexleng:
+	movb	(%rax), %cl
+	cmpb	$0, %cl
+	je	.tiny_pf_function_numhex_fini
+	incq	%rbx
+	incq	%rax
+	jmp	.tiny_pf_function_numhex_gethexleng
+.tiny_pf_function_numhex_fini:
+	movq	%rdx, %rax
+	ret
+.tiny_pf_function_numhex_iszero:
+	movb	$'0', (%rsi)
+	movq	%rsi, %rax
+	movq	$1, %rbx
 	ret
